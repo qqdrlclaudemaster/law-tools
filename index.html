@@ -90,7 +90,7 @@
   .lg-chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-soft);
     background:var(--card);border:1px solid var(--line-soft);border-radius:999px;padding:3px 9px 3px 4px}
   .lg-chip .dot{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:#fff;font-family:var(--font-mono);font-weight:800;font-size:11px}
-  .savehint{font-size:11px;color:var(--seal);font-weight:700;margin-left:auto;display:inline-flex;gap:5px;align-items:center}
+  .savehint{font-size:11px;color:var(--t-definition);font-weight:700;margin-left:auto;display:inline-flex;gap:5px;align-items:center}
 
   /* ---------- canvas ---------- */
   #canvas{position:relative;z-index:1;width:100%;height:calc(100vh - 118px);overflow:auto;padding:34px 40px 120px}
@@ -251,7 +251,7 @@
   </div>
   <div class="legend" id="legend">
     <span class="lab">노드 문법</span>
-    <span class="savehint">⚠ 세션 한정 — 저장은 [내보내기]</span>
+    <span class="savehint">✓ 브라우저에 자동저장됨</span>
   </div>
 </header>
 
@@ -527,8 +527,11 @@ function skelCommercial(){
   }};
 }
 
-/* ---------------- state ---------------- */
-let state = exampleResJudicata();
+/* ---------------- state (with localStorage autosave) ---------------- */
+const LS_KEY = "lawConceptMap_v1";
+function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({meta:state.meta,root:state.root})); }catch(e){} }
+function loadState(){ try{ const raw=localStorage.getItem(LS_KEY); if(raw){ const o=JSON.parse(raw); if(o&&o.root&&o.root.type){ if(!o.meta)o.meta={subject:"",topic:""}; return o; } } }catch(e){} return null; }
+let state = loadState() || exampleResJudicata();
 let editMode = false;
 
 /* ---------------- helpers to traverse ---------------- */
@@ -621,6 +624,7 @@ function render(){
   document.getElementById("mSubject").value=state.meta.subject;
   document.getElementById("mTopic").value=state.meta.topic;
   requestAnimationFrame(drawLinks);
+  saveState();
 }
 
 /* ---------------- connectors ---------------- */
@@ -783,8 +787,8 @@ document.getElementById("tree").addEventListener("click",e=>{
 });
 
 /* ---------------- meta field binding ---------------- */
-document.getElementById("mSubject").addEventListener("input",e=>{state.meta.subject=e.target.value;});
-document.getElementById("mTopic").addEventListener("input",e=>{state.meta.topic=e.target.value;});
+document.getElementById("mSubject").addEventListener("input",e=>{state.meta.subject=e.target.value;saveState();});
+document.getElementById("mTopic").addEventListener("input",e=>{state.meta.topic=e.target.value;saveState();});
 
 /* ---------------- toolbar ---------------- */
 document.getElementById("btnEdit").addEventListener("click",function(){
@@ -929,8 +933,9 @@ function renderHelp(){
     '<li><b>편집모드</b> — 카드의 <code>＋</code>로 자식 추가, <code>✕</code>로 삭제</li>'+
     '<li><b>내보내기</b> — <b>JSON</b>(나중에 [가져오기]로 복원) / <b>Markdown</b>(정리 파일·Project Knowledge에 붙여넣기)</li>'+
   '</ul>'+
-  '<h3>저장 (중요)</h3>'+
-  '<p>작업 내용은 <b>이 세션에서만</b> 유지돼 (브라우저 저장 안 함). 끝나기 전에 꼭 <b>[내보내기 → JSON]</b>으로 받아두고, 다음에 <b>[가져오기]</b>로 이어서 작업해.</p>';
+  '<h3>저장 (자동저장 + 영구보관)</h3>'+
+  '<p>이 버전은 <b>브라우저에 자동저장</b>돼 — 같은 기기·브라우저로 이 주소를 다시 열면 작업하던 개념도가 그대로 남아있어 (새로고침해도 안 날아감).</p>'+
+  '<p><b>단, 작업공간은 하나야.</b> 다른 단원 개념도를 새로 만들면 이전 게 덮어써져. 단원별로 따로 보관하려면 각각 <b>[내보내기 → JSON]</b>으로 받아둬 (프로젝트에 단원별 JSON을 쌓는 워크플로우와 맞물려). 다른 기기로 옮길 때도 JSON을 [가져오기] 하면 돼. ※ 브라우저 데이터를 지우면 자동저장분은 사라지니, 중요한 건 꼭 JSON으로도 받아둘 것.</p>';
 }
 document.getElementById("btnHelp").addEventListener("click",()=>{renderHelp();ovHelp.classList.add("open");});
 
