@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<title>법학 개념도 메이커</title>
+<style>
+  :root{
+    --paper:#f7f3ea;
+    --paper-2:#efe9da;
+    --card:#fffdf8;
+    --ink:#211c15;
+    --ink-soft:#5a5141;
+    --ink-faint:#8a7f6a;
+    --line:#d8cfba;
+    --line-soft:#e7dfcd;
+    --seal:#9b1c1c;
+    --gold:#b08900;
+    --shadow:0 1px 2px rgba(40,30,10,.05),0 8px 24px rgba(40,30,10,.07);
+    --shadow-lg:0 12px 40px rgba(40,30,10,.18);
+    /* node type accents */
+    --t-central:#2a2018;
+    --t-definition:#0f766e;
+    --t-statute:#b45309;
+    --t-principle:#1d4ed8;
+    --t-exception:#b91c1c;
+    --t-case:#7c3aed;
+    --t-example:#c2410c;
+    --t-compare:#475569;
+    --t-mnemonic:#be185d;
+    --font-sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+    --font-mono:"JetBrains Mono","D2Coding","SFMono-Regular","SF Mono",Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:var(--font-sans);
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 600px at 12% -8%, #fffdf6 0%, rgba(255,255,255,0) 55%),
+      radial-gradient(900px 500px at 105% 8%, #f3eedf 0%, rgba(255,255,255,0) 60%),
+      var(--paper);
+    background-attachment:fixed;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  body::before{ /* faint paper grain */
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.55;
+    background-image:radial-gradient(rgba(120,100,60,.05) 1px, transparent 1px);
+    background-size:4px 4px;
+  }
+
+  /* ---------- top bar ---------- */
+  header{
+    position:sticky;top:0;z-index:30;
+    background:rgba(247,243,234,.86);
+    backdrop-filter:saturate(140%) blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .bar{max-width:1400px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+  .brand .seal{
+    font-family:var(--font-mono);font-weight:700;font-size:13px;letter-spacing:.5px;
+    color:#fff;background:var(--seal);border-radius:6px;padding:3px 7px;white-space:nowrap;
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.18);
+  }
+  .brand h1{font-size:17px;margin:0;font-weight:800;letter-spacing:-.2px;white-space:nowrap}
+  .brand small{color:var(--ink-faint);font-size:11px;font-family:var(--font-mono);letter-spacing:.3px}
+  .meta-fields{display:flex;gap:8px;align-items:center;flex:1;min-width:220px}
+  .meta-fields .fld{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:3px 8px}
+  .meta-fields label{font-size:10px;color:var(--ink-faint);font-weight:700;letter-spacing:.5px}
+  .meta-fields input{border:none;background:transparent;font-family:var(--font-sans);font-size:13px;color:var(--ink);outline:none;width:13ch}
+  .meta-fields input.topic{width:20ch;font-weight:700}
+  .tools{display:flex;gap:6px;flex-wrap:wrap}
+  button.btn{
+    font-family:var(--font-sans);font-size:12.5px;font-weight:700;color:var(--ink);
+    background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer;
+    transition:.14s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  }
+  button.btn:hover{border-color:var(--seal);color:var(--seal);transform:translateY(-1px);box-shadow:var(--shadow)}
+  button.btn .ic{font-family:var(--font-mono);font-weight:800}
+  button.btn.primary{background:var(--ink);color:#fff8ee;border-color:var(--ink)}
+  button.btn.primary:hover{background:var(--seal);border-color:var(--seal);color:#fff}
+  button.btn.on{background:var(--seal);border-color:var(--seal);color:#fff}
+  button.btn.on:hover{color:#fff}
+
+  /* ---------- legend strip ---------- */
+  .legend{max-width:1400px;margin:0 auto;padding:8px 18px 10px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .legend .lab{font-size:10px;color:var(--ink-faint);font-weight:800;letter-spacing:.6px;margin-right:2px}
+  .lg-chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-soft);
+    background:var(--card);border:1px solid var(--line-soft);border-radius:999px;padding:3px 9px 3px 4px}
+  .lg-chip .dot{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:#fff;font-family:var(--font-mono);font-weight:800;font-size:11px}
+  .savehint{font-size:11px;color:var(--seal);font-weight:700;margin-left:auto;display:inline-flex;gap:5px;align-items:center}
+
+  /* ---------- canvas ---------- */
+  #canvas{position:relative;z-index:1;width:100%;height:calc(100vh - 118px);overflow:auto;padding:34px 40px 120px}
+  #stage{position:relative;display:inline-block;min-width:100%}
+  svg#links{position:absolute;top:0;left:0;overflow:visible;pointer-events:none;z-index:1}
+  #tree{position:relative;z-index:2}
+
+  /* recursive tree (left -> right) */
+  .subtree{display:flex;align-items:center}
+  .children{display:flex;flex-direction:column;gap:18px}
+  .node-card{position:relative;margin-right:62px;width:262px;flex:0 0 auto;
+    background:var(--card);border:1px solid var(--line);border-left:5px solid var(--ac,#999);
+    border-radius:12px;padding:11px 12px 9px;box-shadow:var(--shadow);cursor:pointer;
+    transition:transform .12s,box-shadow .12s,border-color .12s;
+    animation:pop .26s ease both;animation-delay:var(--d,0s);
+  }
+  @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .node-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--ac)}
+  .node-card.is-central{width:280px;background:#2a2018;border-color:#2a2018;border-left:5px solid var(--gold);color:#f6ecd8}
+  .node-card.is-central .type-tag{color:#d9c79b}
+  .node-card.is-central .card-label{color:#fff7e9}
+  .node-card.is-central .card-meta{color:#cdbb93;border-color:#5a4a30}
+  .card-head{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+  .chip{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;color:#fff;font-family:var(--font-mono);font-weight:800;font-size:13px;flex:0 0 auto;background:var(--ac)}
+  .type-tag{font-size:10.5px;font-weight:800;letter-spacing:.4px;color:var(--ink-faint);text-transform:none}
+  .head-sp{flex:1}
+  .badges{display:flex;align-items:center;gap:4px;font-size:11px}
+  .stars{color:var(--gold);letter-spacing:-1px;font-size:11px}
+  .b-mem{font-size:10px}
+  .b-m{font-family:var(--font-mono);font-weight:800;font-size:10px;color:#fff;background:var(--ink);border-radius:4px;padding:0 4px}
+  .b-v{font-size:9.5px;font-weight:800;border-radius:5px;padding:1px 5px}
+  .b-v.ok{color:#0f766e;background:#dcfce7}
+  .b-v.no{color:#b45309;background:#fef3c7}
+  .card-label{font-size:13.5px;font-weight:700;line-height:1.32;letter-spacing:-.2px;word-break:keep-all}
+  .card-meta{display:inline-block;margin-top:5px;font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);
+    border:1px dashed var(--line);border-radius:6px;padding:1px 6px;background:rgba(255,255,255,.4)}
+  .card-foot{display:flex;align-items:center;gap:6px;margin-top:8px}
+  .toggle{font-family:var(--font-mono);font-size:11px;font-weight:800;color:var(--ink-soft);
+    background:var(--paper-2);border:1px solid var(--line);border-radius:7px;padding:2px 7px;cursor:pointer}
+  .toggle:hover{border-color:var(--ac);color:var(--ac)}
+  .foot-sp{flex:1}
+  .mini{width:24px;height:24px;border-radius:7px;border:1px solid var(--line);background:var(--card);
+    cursor:pointer;font-family:var(--font-mono);font-weight:800;font-size:13px;color:var(--ink-soft);display:grid;place-items:center}
+  .mini:hover{border-color:var(--seal);color:var(--seal)}
+  .mini.add:hover{border-color:#0f766e;color:#0f766e}
+  .detail-hint{font-size:10px;color:var(--ink-faint);margin-top:7px;display:flex;align-items:center;gap:4px}
+
+  /* type accent assignment */
+  .t-central{--ac:var(--t-central)} .t-definition{--ac:var(--t-definition)}
+  .t-statute{--ac:var(--t-statute)} .t-principle{--ac:var(--t-principle)}
+  .t-exception{--ac:var(--t-exception)} .t-case{--ac:var(--t-case)}
+  .t-example{--ac:var(--t-example)} .t-compare{--ac:var(--t-compare)}
+  .t-mnemonic{--ac:var(--t-mnemonic)}
+
+  /* ---------- modal ---------- */
+  .overlay{position:fixed;inset:0;z-index:60;background:rgba(33,28,21,.42);backdrop-filter:blur(2px);
+    display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+  .overlay.open{display:flex}
+  .modal{background:var(--paper);border:1px solid var(--line);border-radius:16px;max-width:620px;width:100%;
+    box-shadow:var(--shadow-lg);overflow:hidden;animation:rise .2s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .modal-head{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line);
+    background:linear-gradient(var(--card),var(--paper))}
+  .modal-head .chip{width:26px;height:26px;font-size:14px}
+  .modal-head .mt{flex:1;min-width:0}
+  .modal-head .ttag{font-size:11px;font-weight:800;color:var(--ink-faint)}
+  .modal-head .mlabel{font-size:16px;font-weight:800;letter-spacing:-.3px;word-break:keep-all}
+  .x{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:16px;color:var(--ink-soft)}
+  .x:hover{border-color:var(--seal);color:var(--seal)}
+  .modal-body{padding:16px 18px;max-height:62vh;overflow:auto}
+  .mmeta{font-family:var(--font-mono);font-size:13px;color:var(--ink);background:var(--card);border:1px solid var(--line);
+    border-radius:8px;padding:7px 10px;margin-bottom:12px;display:inline-block}
+  .mdetail{white-space:pre-wrap;font-size:14px;line-height:1.62;color:var(--ink);word-break:keep-all}
+  .mbadges{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+  /* edit form */
+  .field{margin-bottom:12px}
+  .field>label{display:block;font-size:11px;font-weight:800;color:var(--ink-faint);letter-spacing:.4px;margin-bottom:5px}
+  .field input[type=text],.field textarea,.field select{
+    width:100%;font-family:var(--font-sans);font-size:14px;color:var(--ink);background:var(--card);
+    border:1px solid var(--line);border-radius:9px;padding:9px 11px;outline:none}
+  .field input.mono,.field textarea.mono{font-family:var(--font-mono);font-size:13px}
+  .field textarea{min-height:140px;resize:vertical;line-height:1.6}
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--seal);box-shadow:0 0 0 3px rgba(155,28,28,.08)}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row .field{flex:1;min-width:130px}
+  .modal-foot{display:flex;gap:8px;justify-content:flex-end;padding:13px 18px;border-top:1px solid var(--line);background:var(--card)}
+
+  /* lists in modals (presets / help) */
+  .opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);
+    border:1px solid var(--line);border-radius:11px;padding:12px 14px;cursor:pointer;margin-bottom:9px;transition:.13s}
+  .opt:hover{border-color:var(--seal);transform:translateX(2px);box-shadow:var(--shadow)}
+  .opt .ob{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:#fff;font-family:var(--font-mono);font-weight:800;flex:0 0 auto}
+  .opt .ot{flex:1}
+  .opt .ot b{display:block;font-size:14px}
+  .opt .ot span{font-size:12px;color:var(--ink-faint)}
+
+  .help h3{font-size:14px;margin:18px 0 8px;color:var(--seal);font-weight:800}
+  .help h3:first-child{margin-top:2px}
+  .help p,.help li{font-size:13.5px;line-height:1.62;color:var(--ink);word-break:keep-all}
+  .help ul{margin:6px 0;padding-left:18px}
+  .help code{font-family:var(--font-mono);font-size:12px;background:var(--card);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+  .maptbl{width:100%;border-collapse:collapse;margin-top:8px;font-size:12.5px}
+  .maptbl th,.maptbl td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;word-break:keep-all}
+  .maptbl th{background:var(--paper-2);font-weight:800;color:var(--ink-soft);white-space:nowrap}
+  .maptbl td:first-child{font-weight:800;white-space:nowrap;color:var(--seal)}
+
+  /* tabs */
+  .tabs{display:flex;gap:6px;margin-bottom:12px}
+  .tab{font-size:12.5px;font-weight:800;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--ink-soft)}
+  .tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .exarea{width:100%;min-height:300px;font-family:var(--font-mono);font-size:12px;line-height:1.5;
+    border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--card);color:var(--ink);resize:vertical;outline:none}
+
+  /* add-type popover */
+  .pop{position:fixed;z-index:50;background:var(--paper);border:1px solid var(--line);border-radius:12px;
+    box-shadow:var(--shadow-lg);padding:7px;display:none;min-width:172px}
+  .pop.open{display:block}
+  .pop button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:none;background:transparent;
+    border-radius:8px;padding:7px 9px;cursor:pointer;font-family:var(--font-sans);font-size:13px;color:var(--ink)}
+  .pop button:hover{background:var(--card)}
+  .pop .pc{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;color:#fff;font-family:var(--font-mono);font-weight:800;font-size:12px}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);z-index:90;
+    background:var(--ink);color:#fff8ee;font-size:13px;font-weight:700;padding:10px 16px;border-radius:10px;
+    box-shadow:var(--shadow-lg);opacity:0;transition:.22s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:640px){
+    .brand h1{font-size:15px} .brand small{display:none}
+    #canvas{padding:22px 16px 120px;height:calc(100vh - 150px)}
+    .node-card{width:230px;margin-right:48px}
+    .meta-fields{order:3;width:100%}
+    .savehint{width:100%;margin:6px 0 0}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <div class="brand">
+      <span class="seal">法 MAP</span>
+      <h1>법학 개념도 메이커</h1>
+      <small>concept-map builder</small>
+    </div>
+    <div class="meta-fields">
+      <div class="fld"><label>과목</label><input id="mSubject" type="text" value="민사소송법"></div>
+      <div class="fld"><label>단원</label><input id="mTopic" class="topic" type="text" value="기판력의 시적 범위"></div>
+    </div>
+    <div class="tools">
+      <button class="btn" id="btnEdit"><span class="ic">✎</span>편집모드</button>
+      <button class="btn" id="btnPreset"><span class="ic">▦</span>과목 프리셋</button>
+      <button class="btn" id="btnExport"><span class="ic">↧</span>내보내기</button>
+      <button class="btn" id="btnImport"><span class="ic">↥</span>가져오기</button>
+      <button class="btn" id="btnHelp"><span class="ic">?</span>도움말</button>
+    </div>
+  </div>
+  <div class="legend" id="legend">
+    <span class="lab">노드 문법</span>
+    <span class="savehint">⚠ 세션 한정 — 저장은 [내보내기]</span>
+  </div>
+</header>
+
+<div id="canvas">
+  <div id="stage">
+    <svg id="links"></svg>
+    <div id="tree"></div>
+  </div>
+</div>
+
+<!-- detail / edit modal -->
+<div class="overlay" id="ovDetail">
+  <div class="modal" id="detailModal"></div>
+</div>
+
+<!-- preset modal -->
+<div class="overlay" id="ovPreset">
+  <div class="modal">
+    <div class="modal-head"><span class="chip" style="background:var(--seal)">▦</span>
+      <div class="mt"><div class="ttag">PRESET</div><div class="mlabel">개념도 불러오기</div></div>
+      <button class="x" data-close>✕</button></div>
+    <div class="modal-body" id="presetBody"></div>
+  </div>
+</div>
+
+<!-- export modal -->
+<div class="overlay" id="ovExport">
+  <div class="modal">
+    <div class="modal-head"><span class="chip" style="background:var(--ink)">↧</span>
+      <div class="mt"><div class="ttag">EXPORT</div><div class="mlabel">내보내기</div></div>
+      <button class="x" data-close>✕</button></div>
+    <div class="modal-body">
+      <div class="tabs">
+        <button class="tab on" id="tabJson">JSON (재불러오기용)</button>
+        <button class="tab" id="tabMd">Markdown (정리 파일용)</button>
+      </div>
+      <textarea class="exarea" id="exArea" readonly></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="btnDownload"><span class="ic">⇩</span>파일로 저장</button>
+      <button class="btn primary" id="btnCopy"><span class="ic">⧉</span>복사</button>
+    </div>
+  </div>
+</div>
+
+<!-- import modal -->
+<div class="overlay" id="ovImport">
+  <div class="modal">
+    <div class="modal-head"><span class="chip" style="background:var(--ink)">↥</span>
+      <div class="mt"><div class="ttag">IMPORT</div><div class="mlabel">가져오기 (JSON 붙여넣기)</div></div>
+      <button class="x" data-close>✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--ink-faint);margin:0 0 10px">이전에 내보낸 JSON을 붙여넣으면 그대로 복원돼. (Markdown은 가져오기 안 됨)</p>
+      <textarea class="exarea" id="imArea" placeholder='{ "meta": {...}, "root": {...} }'></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn primary" id="btnDoImport"><span class="ic">↥</span>불러오기</button>
+    </div>
+  </div>
+</div>
+
+<!-- help modal -->
+<div class="overlay" id="ovHelp">
+  <div class="modal">
+    <div class="modal-head"><span class="chip" style="background:var(--seal)">?</span>
+      <div class="mt"><div class="ttag">GUIDE</div><div class="mlabel">사용법 & 노드 문법</div></div>
+      <button class="x" data-close>✕</button></div>
+    <div class="modal-body help" id="helpBody"></div>
+  </div>
+</div>
+
+<!-- add-type popover -->
+<div class="pop" id="addPop"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ---------------- node-type grammar (the reusable core) ---------------- */
+const TYPES = {
+  central:   {name:"중심개념",  icon:"◎", md:"◎",   color:"var(--t-central)",   raw:"#2a2018"},
+  definition:{name:"정의·기준", icon:"≣", md:"≣",   color:"var(--t-definition)",raw:"#0f766e"},
+  statute:   {name:"조문",      icon:"§", md:"§ 📜", color:"var(--t-statute)",   raw:"#b45309"},
+  principle: {name:"원칙·효과", icon:"⚖", md:"⚖",   color:"var(--t-principle)", raw:"#1d4ed8"},
+  exception: {name:"예외·한계", icon:"⊘", md:"⊘",   color:"var(--t-exception)", raw:"#b91c1c"},
+  case:      {name:"판례",      icon:"⚑", md:"⚑",   color:"var(--t-case)",      raw:"#7c3aed", verifiable:true},
+  example:   {name:"사례·적용", icon:"✱", md:"💡",  color:"var(--t-example)",   raw:"#c2410c"},
+  compare:   {name:"비교",      icon:"⇄", md:"⇄",   color:"var(--t-compare)",   raw:"#475569"},
+  mnemonic:  {name:"두문자",    icon:"✦", md:"✦",   color:"var(--t-mnemonic)",  raw:"#be185d"}
+};
+const ADD_ORDER = ["definition","statute","principle","exception","case","example","compare","mnemonic"];
+
+/* ---------------- id ---------------- */
+let _id=0; const uid=()=>"n"+(++_id)+"_"+Math.random().toString(36).slice(2,6);
+function reseed(node){ node.id=uid(); (node.children||[]).forEach(reseed); }
+
+/* ---------------- escaping ---------------- */
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+
+/* ===================================================================
+   WORKED EXAMPLE — 기판력의 시적 범위
+   (조문: 국가법령정보센터·LBOX / 판례: 대법원 판례속보·CaseNote 로 확인)
+=================================================================== */
+function exampleResJudicata(){
+  return {
+    meta:{subject:"민사소송법", topic:"기판력의 시적 범위"},
+    root:{
+      id:uid(), type:"central",
+      label:"기판력의 시적 범위",
+      meta:"= 표준시(기준시) 문제",
+      importance:5, memo:"required", m:false, verified:null, collapsed:false,
+      detail:
+"[일반 정의]\n기판력이란 확정된 종국판결의 판단내용이 후소(後訴)에서 당사자와 법원을 구속하는 효력이다. 그중 '시적 범위'는, 그 기판력이 \"어느 시점의 권리·법률관계\"를 확정하는가의 문제다.\n\n[주체·객체·시점 분석]\n· 주체: 당사자(및 변론종결 뒤의 승계인)와 법원을 구속한다.\n· 객체: 소송물인 권리관계의 존부에 관한 판단에 미친다.\n· 시점: 사실심 변론종결시를 기준(표준시)으로 한 그 시점의 권리관계를 확정한다.\n\n→ 따라서 '언제를 기준으로 권리관계가 확정되는가(표준시)' + '그 전후의 사유가 차단되는가(차단효)'가 이 단원의 두 축이다.",
+      children:[
+        {
+          id:uid(), type:"definition",
+          label:"표준시(기준시) = 사실심 변론종결시",
+          meta:"", importance:5, memo:"required", m:true, verified:null, collapsed:false,
+          detail:
+"[일반 정의] 기판력의 '표준시(기준시)'란, 판결이 어느 시점의 권리관계를 확정하는지의 기준이 되는 시점을 말한다.\n\n[기준] 그 표준시는 '사실심 변론종결시'다. 법원이 변론종결시까지 제출된 소송자료를 기초로 권리관계를 판단하기 때문이다.\n· 변론 없이 한 판결의 경우 → 판결선고시가 표준시.\n· 상고심(법률심)은 새로운 사실·증거를 다루지 않으므로, 기준은 '사실심' 변론종결시.",
+          children:[
+            {
+              id:uid(), type:"principle",
+              label:"차단효(실권효)",
+              meta:"", importance:5, memo:"required", m:true, verified:null, collapsed:false,
+              detail:
+"표준시(사실심 변론종결시) 이전에 이미 존재하여 제출할 수 있었던 공격·방어방법은, 당사자가 실제로 제출하지 않았더라도 후소(또는 청구이의의 소)에서 다시 주장할 수 없다(차단·실권).\n\n↔ 반대로, 표준시 '후'에 새로 발생한 사유는 차단되지 않으므로, 이를 근거로 청구이의의 소 등을 제기할 수 있다.\n\n[취지] 이미 확정된 권리관계를, 그 전에 주장할 수 있었던 사유로 다시 다투게 하면 분쟁의 일회적 해결과 법적 안정성이 무너지기 때문.",
+              children:[
+                {
+                  id:uid(), type:"mnemonic",
+                  label:"두문자: 前遮後可 (전차후가)",
+                  meta:"암기보조(법률용어 아님)", importance:2, memo:null, m:false, verified:null, collapsed:false,
+                  detail:"변론종결 '前(전)' 사유 → 遮(차)단 O  /  변론종결 '後(후)' 사유 → 可(가)능(차단 X, 청구이의 가능).\n→ '전차후가'로 묶어서 암기. (정식 법률용어가 아니라 기억용 표지임에 유의.)"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id:uid(), type:"statute",
+          label:"근거 조문 — 청구이의의 소",
+          meta:"민사집행법 §44", importance:4, memo:"recommended", m:false, verified:null, collapsed:false,
+          detail:
+"📜 민사집행법 제44조(청구에 관한 이의의 소)\n① 채무자가 판결에 따라 확정된 청구에 관하여 이의하려면 제1심 판결법원에 청구에 관한 이의의 소를 제기하여야 한다.\n② 제1항의 이의는 그 이유가 변론이 종결된 뒤(변론 없이 한 판결의 경우에는 판결이 선고된 뒤)에 생긴 것이어야 한다.\n③ 이의이유가 여러 가지인 때에는 동시에 주장하여야 한다.\n\n→ 제2항이 청구이의 사유를 '변론종결 뒤 발생'으로 한정한 것 = 표준시(사실심 변론종결시)의 실정법적 근거. 변론종결 전 사유로 다투는 것은 확정판결의 기판력에 저촉되기 때문이다.\n[조문 출처: 국가법령정보센터·LBOX 확인]"
+        },
+        {
+          id:uid(), type:"exception",
+          label:"형성권 행사와 차단효 (★사례형 핵심)",
+          meta:"취소·해제 ↔ 상계", importance:5, memo:"required", m:true, verified:null, collapsed:false,
+          detail:
+"변론종결 전에 형성권(취소권·해제권·상계권 등)을 행사할 수 있었으나, 변론종결 '후'에야 비로소 행사한 경우 → 그 사유가 차단되는지가 쟁점.\n\n결론이 형성권의 성질에 따라 갈린다.\n· 취소권·해제권: 변론종결 전 원인이 있었으면 → 변론종결 전 발생으로 보아 차단(O).\n· 상계권: 상계는 '의사표시 시'에 효력이 생기므로 → 변론종결 후 행사 시 차단되지 않음(X). 청구이의 가능.",
+          children:[
+            {
+              id:uid(), type:"case",
+              label:"취소권 → 차단됨(O)",
+              meta:"대판 1979. 8. 14. 79다1105", importance:3, memo:null, m:true, verified:true, collapsed:false,
+              detail:
+"[법리·결론] 변론종결 전에 취소의 원인이 있었으나 변론종결 후에 비로소 취소의 의사표시를 한 경우, 그 이의 원인은 '변론종결 전에 발생한 것'으로 보아 청구이의의 이유로 삼을 수 없다(차단 O).\n(대판 1979. 8. 14. 79다1105)"
+            },
+            {
+              id:uid(), type:"case",
+              label:"해제권 → 차단됨(O)",
+              meta:"대판 1981. 7. 7. 80다2751", importance:3, memo:null, m:true, verified:true, collapsed:false,
+              detail:
+"[법리·결론] 변론종결 전에 해제의 원인이 있었으나 변론종결 후에 해제의 의사표시를 한 경우에도, 취소권과 같은 취지로 변론종결 전 발생으로 보아 청구이의의 이유가 될 수 없다(차단 O).\n(대판 1981. 7. 7. 80다2751)"
+            },
+            {
+              id:uid(), type:"case",
+              label:"상계권 → 차단 안 됨(X) — 예외",
+              meta:"대판 2025. 8. 28. 2022다284520", importance:5, memo:"required", m:true, verified:true, collapsed:false,
+              detail:
+"[법리] 상계적상에 있다는 것만으로 채무소멸의 효력이 생기는 것은 아니고, '상계의 의사표시'를 기다려 비로소 효력이 발생한다. 따라서 변론종결 전에 상계적상에 있었더라도 변론종결 '후'에 상계 의사표시를 하면, 그 사유는 변론종결 후에 생긴 것으로서 청구이의의 이유가 된다(차단 X).\n\n[최근 중요판례 / 2025] 집행권원인 확정판결의 사실심 변론종결 '이전'에 별소(別訴)에서 소송상 상계의 의사표시가 있었더라도, 변론종결 '이후'에 그 별소 법원이 상계 주장을 받아들이는 실질적 판단을 한 경우 → (기판력 저촉 등 특별한 사정이 없는 한) 변론종결 이후에 생긴 사유로서 적법한 청구이의 이유가 된다.\n(대판 2025. 8. 28. 2022다284520, 민사집행법 §44② 참조 — 대법원 판례속보)"
+            }
+          ]
+        },
+        {
+          id:uid(), type:"case",
+          label:"변제 → 변론종결 후 변제면 청구이의 가능",
+          meta:"대판 1995. 6. 30. 95다15827", importance:3, memo:null, m:true, verified:true, collapsed:false,
+          detail:
+"[사실관계·법리] 가집행선고부 제1심판결에 대해 채무자가 항소한 뒤 항소심 계속 중에 변제한 경우, 그 변제는 판결확정시에 비로소 변제의 효과가 발생한다.\n[결론] 따라서 '변론종결 후의 변제'에 해당하여 청구이의의 소를 제기할 수 있다(차단 X).\n(대판 1995. 6. 30. 95다15827)\n→ 포인트: 변제는 '효과 발생 시점'이 변론종결 후인지로 판단."
+        },
+        {
+          id:uid(), type:"compare",
+          label:"상속포기 ↔ 한정승인 (실권효 제한의 한계)",
+          meta:"", importance:3, memo:null, m:false, verified:null, collapsed:false,
+          detail:
+"같은 '상속' 관련이라도 기판력이 미치는 범위가 달라 결론이 갈린다.\n· 상속포기: '채무의 존재 자체'가 문제 → 판결 주문에 기판력이 미침 → 차단(O).\n· 한정승인: '책임의 범위'만 문제 → 기판력이 미치지 않음 → 실권효 제한 법리로 차단되지 않음(X).",
+          children:[
+            {
+              id:uid(), type:"case",
+              label:"상속포기 → 차단됨(O)",
+              meta:"대판 2009. 5. 28. 2008다79876", importance:3, memo:null, m:false, verified:true, collapsed:false,
+              detail:
+"[법리·결론] 변론종결 전에 상속포기를 하였음에도 이를 주장하지 않아 채권자 승소판결이 확정된 경우, 그 뒤 상속포기를 이유로 한 청구이의의 소는 제기할 수 없다(차단 O).\n[이유] 상속포기는 상속에 의한 '채무의 존재 자체'가 문제되어 확정판결 주문에 당연히 기판력이 미치기 때문.\n(대판 2009. 5. 28. 2008다79876)"
+            },
+            {
+              id:uid(), type:"case",
+              label:"한정승인 → 차단 안 됨(X)",
+              meta:"대판 2006다23138 참조", importance:3, memo:null, m:false, verified:false, collapsed:false,
+              detail:
+"[법리] 한정승인은 '채무의 존재'가 아니라 상속에 따른 '책임의 범위'만 문제되므로 그에 관한 판단에는 기판력이 미치지 않는다. 따라서 변론종결 전 한정승인을 주장하지 않았더라도, 기판력에 의한 실권효가 제한되어 후소·집행 단계에서 주장할 수 있다(차단 X).\n(실권효 제한 법리 — 대판 2006다23138 참조)\n\n⚠ 검증상태 미확인: 위 판결번호는 인용 출처에서 '참조'로만 확인됨. 본문(사실관계·판시 전문)은 별도 검증 필요 → case-law-fetcher 등으로 원문 대조 권장."
+            }
+          ]
+        },
+        {
+          id:uid(), type:"example",
+          label:"💡 미니사례 + 📌 변시 포인트",
+          meta:"", importance:4, memo:null, m:false, verified:null, collapsed:false,
+          detail:
+"[💡 미니사례] 甲이 乙에게 대여금 1억원 청구 → 승소 확정(사실심 변론종결 2024.3.1.). 乙은 변론종결 전부터 甲에 대해 8천만원 물품대금채권(상계적상)을 갖고 있었으나 상계하지 않았다. 판결확정 후 乙이 8천만원으로 상계 의사표시를 하고 청구이의의 소를 제기.\n→ 상계권은 차단되지 않으므로(의사표시 시 효력 발생) 8천만원 범위에서 청구이의가 인용될 수 있다. (만약 취소권·해제권이었다면 차단되어 불가했을 것.)\n\n[📌 변시 포인트]\n① 표준시 = 사실심 변론종결시(상고심 X).\n② 형성권 차단: '취소·해제 = 차단 / 상계 = 차단 X'를 결론+근거(상계는 의사표시 시 효력)까지.\n③ 변제는 '효과 발생 시점'으로 판단.\n④ 상속포기(기판력 O, 차단) ↔ 한정승인(기판력 X, 실권효 제한)."
+        }
+      ]
+    }
+  };
+}
+
+/* ---------------- skeleton presets (cross-subject reuse demo) ---------------- */
+function blankNode(type,label,meta){return {id:uid(),type,label,meta:meta||"",detail:"",importance:0,memo:null,m:false,verified:(TYPES[type].verifiable?null:null),collapsed:false,children:[]};}
+function withDetail(n,d){n.detail=d;return n;}
+
+function blankTemplate(){
+  return {meta:{subject:"[과목]",topic:"[단원/쟁점]"},root:{
+    id:uid(),type:"central",label:"[중심개념 입력]",meta:"",detail:"[일반 정의를 '먼저' 적고, 이어서 주체·객체·시점 관점으로 분석해서 적기]",importance:0,memo:null,m:false,verified:null,collapsed:false,
+    children:[
+      withDetail(blankNode("definition","[정의·기준 입력]"),"일반 정의 → 주체/객체/시점 분석 순서로."),
+      withDetail(blankNode("statute","[조문 — §___]","§___"),"📜 조문 전문 그대로 붙여넣기."),
+      withDetail(blankNode("principle","[원칙·효과 입력]"),"핵심 법리·효과."),
+      withDetail(blankNode("exception","[예외·한계 입력]"),"예외·한계·반대견해."),
+      withDetail(blankNode("case","[판례 — 검증 후]","대판 ____. __. __. ____"),"사실관계 + 법리 + 결론. 판결번호는 case-law-fetcher로 검증."),
+      withDetail(blankNode("example","[사례·적용 입력]"),"💡 미니사례 / 📌 시험 포인트.")
+    ]
+  }};
+}
+function skelCriminal(){
+  return {meta:{subject:"형법",topic:"[죄명/쟁점]"},root:{
+    id:uid(),type:"central",label:"[죄명] (형법 §___)",meta:"형법 §___",detail:"[죄의 보호법익·정의를 먼저, 이어 주체/객체/행위 분석]",importance:0,memo:null,m:false,verified:null,collapsed:false,
+    children:[
+      withDetail(blankNode("definition","구성요건 개관"),"보호법익 → 객관적/주관적 구성요건 체계로."),
+      withDetail(blankNode("statute","[형법 §___] 조문 전문","형법 §___"),"📜 조문 전문 붙여넣기."),
+      withDetail(blankNode("principle","객관적 구성요건요소"),"행위주체·행위객체·행위·결과·인과관계 등."),
+      withDetail(blankNode("principle","주관적 구성요건요소"),"고의(+초과주관적 요소: 목적·불법영득의사 등)."),
+      withDetail(blankNode("exception","위법성·책임 쟁점"),"위법성조각·책임조각 관련 논점."),
+      withDetail(blankNode("case","[판례 — 검증 후]","대판 ____"),"사실관계+법리+결론. 전합/최근 3년 우선, 번호 검증."),
+      withDetail(blankNode("example","사례형 포인트"),"💡 사례 / 죄수·경합 정리.")
+    ]
+  }};
+}
+function skelCrimPro(){
+  return {meta:{subject:"형사소송법",topic:"[제도/쟁점]"},root:{
+    id:uid(),type:"central",label:"[제도/쟁점 입력]",meta:"",detail:"[제도의 의의를 먼저, 이어 주체/객체/시점 분석]",importance:0,memo:null,m:false,verified:null,collapsed:false,
+    children:[
+      withDetail(blankNode("definition","의의·취지"),"제도의 정의와 취지."),
+      withDetail(blankNode("statute","[형소법 §___] 조문","형소법 §___"),"📜 조문 전문 붙여넣기."),
+      withDetail(blankNode("principle","요건"),"적법요건/성립요건."),
+      withDetail(blankNode("principle","효과"),"인정 시 법적 효과."),
+      withDetail(blankNode("exception","예외·한계"),"위법수집증거·예외법리 등."),
+      withDetail(blankNode("case","[판례 — 검증 후]","대판 ____"),"사실관계+법리+결론, 번호 검증.")
+    ]
+  }};
+}
+function skelCommercial(){
+  return {meta:{subject:"상법",topic:"[제도/쟁점]"},root:{
+    id:uid(),type:"central",label:"[제도 입력]",meta:"",detail:"[제도의 의의를 먼저, 이어 주체/객체/시점 분석]",importance:0,memo:null,m:false,verified:null,collapsed:false,
+    children:[
+      withDetail(blankNode("definition","의의"),"개념·취지."),
+      withDetail(blankNode("statute","[상법 §___] 조문","상법 §___"),"📜 조문 전문 붙여넣기."),
+      withDetail(blankNode("principle","요건·효과"),"성립요건과 법적 효과."),
+      withDetail(blankNode("case","[판례 — 검증 후]","대판 ____"),"사실관계+법리+결론, 번호 검증."),
+      withDetail(blankNode("example","사례형 포인트"),"💡 사례 / 청구권·책임 정리.")
+    ]
+  }};
+}
+
+/* ---------------- state ---------------- */
+let state = exampleResJudicata();
+let editMode = false;
+
+/* ---------------- helpers to traverse ---------------- */
+function findNode(id,node,parent){
+  node=node||state.root;
+  if(node.id===id) return {node,parent:parent||null};
+  for(const c of (node.children||[])){const r=findNode(id,c,node); if(r) return r;}
+  return null;
+}
+
+/* ---------------- legend render ---------------- */
+function renderLegend(){
+  const lg=document.getElementById("legend");
+  lg.querySelectorAll(".lg-chip").forEach(e=>e.remove());
+  const ref=lg.querySelector(".savehint");
+  Object.keys(TYPES).forEach(k=>{
+    const t=TYPES[k];
+    const c=document.createElement("span");
+    c.className="lg-chip";
+    c.innerHTML='<span class="dot" style="background:'+t.color+'">'+esc(t.icon)+'</span>'+esc(t.name);
+    lg.insertBefore(c,ref);
+  });
+}
+
+/* ---------------- tree render ---------------- */
+function badgeHtml(n){
+  let h="";
+  if(n.importance>0){h+='<span class="stars">'+"★".repeat(Math.min(5,n.importance))+'</span>';}
+  if(n.memo==="required") h+='<span class="b-mem" title="필수암기">🔴</span>';
+  else if(n.memo==="recommended") h+='<span class="b-mem" title="권장암기">🟡</span>';
+  if(n.m) h+='<span class="b-m">M</span>';
+  if(TYPES[n.type].verifiable){
+    if(n.verified===true) h+='<span class="b-v ok">✓검증</span>';
+    else if(n.verified===false) h+='<span class="b-v no">⚠미검증</span>';
+  }
+  return h;
+}
+function cardHtml(n){
+  const t=TYPES[n.type];
+  const isC=n.type==="central";
+  const kids=(n.children&&n.children.length)||0;
+  let foot="";
+  if(kids){
+    foot+='<button class="toggle" data-toggle="'+n.id+'">'+(n.collapsed?("▸ "+kids):"▾")+'</button>';
+  }
+  foot+='<span class="foot-sp"></span>';
+  if(editMode){
+    foot+='<button class="mini add" data-add="'+n.id+'" title="자식 노드 추가">＋</button>';
+    if(!isC) foot+='<button class="mini" data-del="'+n.id+'" title="삭제">✕</button>';
+  }
+  const metaLine = n.meta ? '<div class="card-meta">'+esc(n.meta)+'</div>' : '';
+  const hint = (!editMode && n.detail) ? '<div class="detail-hint">▸ 눌러서 상세 보기</div>' : (editMode?'<div class="detail-hint">▸ 눌러서 편집</div>':'');
+  return ''+
+    '<div class="card-head">'+
+      '<span class="chip">'+esc(t.icon)+'</span>'+
+      '<span class="type-tag">'+esc(t.name)+'</span>'+
+      '<span class="head-sp"></span>'+
+      '<span class="badges">'+badgeHtml(n)+'</span>'+
+    '</div>'+
+    '<div class="card-label">'+esc(n.label)+'</div>'+
+    metaLine+
+    (foot?'<div class="card-foot">'+foot+'</div>':'')+
+    hint;
+}
+let _delay=0;
+function buildSubtree(n){
+  const wrap=document.createElement("div");
+  wrap.className="subtree";
+  const card=document.createElement("div");
+  card.className="node-card t-"+n.type+(n.type==="central"?" is-central":"");
+  card.dataset.id=n.id;
+  card.dataset.ntype=n.type;
+  card.style.setProperty("--d",(_delay+=0.012)+"s");
+  card.innerHTML=cardHtml(n);
+  wrap.appendChild(card);
+  if(n.children&&n.children.length&&!n.collapsed){
+    const ch=document.createElement("div");
+    ch.className="children";
+    ch.dataset.parent=n.id;
+    n.children.forEach(c=>ch.appendChild(buildSubtree(c)));
+    wrap.appendChild(ch);
+  }
+  return wrap;
+}
+function render(){
+  _delay=0;
+  const tree=document.getElementById("tree");
+  tree.innerHTML="";
+  tree.appendChild(buildSubtree(state.root));
+  document.getElementById("mSubject").value=state.meta.subject;
+  document.getElementById("mTopic").value=state.meta.topic;
+  requestAnimationFrame(drawLinks);
+}
+
+/* ---------------- connectors ---------------- */
+function drawLinks(){
+  const stage=document.getElementById("stage");
+  const svg=document.getElementById("links");
+  const sr=stage.getBoundingClientRect();
+  const w=stage.offsetWidth, h=stage.offsetHeight;
+  svg.setAttribute("width",w); svg.setAttribute("height",h);
+  svg.setAttribute("viewBox","0 0 "+w+" "+h);
+  let paths="";
+  document.querySelectorAll(".children").forEach(ch=>{
+    const pid=ch.dataset.parent;
+    const pcard=document.querySelector('.node-card[data-id="'+pid+'"]');
+    if(!pcard) return;
+    const pr=pcard.getBoundingClientRect();
+    const px=pr.right - sr.left, py=pr.top - sr.top + pr.height/2;
+    // direct children = .subtree > .node-card
+    Array.from(ch.children).forEach(sub=>{
+      const ccard=sub.querySelector(":scope > .node-card");
+      if(!ccard) return;
+      const cr=ccard.getBoundingClientRect();
+      const cx=cr.left - sr.left, cy=cr.top - sr.top + cr.height/2;
+      const midX=px+(cx-px)/2;
+      const acc=((TYPES[ccard.dataset.ntype]||{}).raw)||"#998";
+      paths+='<path d="M '+px+' '+py+' L '+midX+' '+py+' L '+midX+' '+cy+' L '+cx+' '+cy+'" fill="none" stroke="'+acc.trim()+'" stroke-opacity="0.4" stroke-width="1.6"/>';
+      paths+='<circle cx="'+px+'" cy="'+py+'" r="2.4" fill="'+acc.trim()+'" fill-opacity="0.6"/>';
+    });
+  });
+  svg.innerHTML=paths;
+}
+window.addEventListener("resize",()=>requestAnimationFrame(drawLinks));
+
+/* ---------------- detail / edit modal ---------------- */
+const ovDetail=document.getElementById("ovDetail");
+const detailModal=document.getElementById("detailModal");
+function openDetail(id){
+  const f=findNode(id); if(!f) return;
+  const n=f.node, t=TYPES[n.type];
+  if(editMode){ renderEditForm(n); }
+  else { renderReadView(n,t); }
+  ovDetail.classList.add("open");
+}
+function renderReadView(n,t){
+  detailModal.innerHTML=
+    '<div class="modal-head">'+
+      '<span class="chip" style="background:'+t.color+'">'+esc(t.icon)+'</span>'+
+      '<div class="mt"><div class="ttag">'+esc(t.name)+'</div><div class="mlabel">'+esc(n.label)+'</div></div>'+
+      '<button class="x" data-close>✕</button>'+
+    '</div>'+
+    '<div class="modal-body">'+
+      (n.meta?'<div class="mmeta">'+esc(n.meta)+'</div>':'')+
+      '<div class="mdetail" id="rvDetail"></div>'+
+      '<div class="mbadges">'+badgeHtml(n)+'</div>'+
+    '</div>';
+  document.getElementById("rvDetail").textContent = n.detail || "(상세 내용 없음 — 편집모드에서 추가)";
+}
+function renderEditForm(n){
+  const verRow = TYPES[n.type].verifiable ?
+    '<div class="field"><label>판례 검증상태</label><select id="eVerified">'+
+      '<option value="null"'+(n.verified===null?" selected":"")+'>— 미표시</option>'+
+      '<option value="true"'+(n.verified===true?" selected":"")+'>✓ 검증됨</option>'+
+      '<option value="false"'+(n.verified===false?" selected":"")+'>⚠ 미검증</option>'+
+    '</select></div>' : '';
+  let typeOpts="";
+  Object.keys(TYPES).forEach(k=>{ if(k==="central"&&n.type!=="central") return;
+    typeOpts+='<option value="'+k+'"'+(n.type===k?" selected":"")+'>'+TYPES[k].icon+' '+TYPES[k].name+'</option>';});
+  detailModal.innerHTML=
+    '<div class="modal-head">'+
+      '<span class="chip" style="background:'+TYPES[n.type].color+'">'+esc(TYPES[n.type].icon)+'</span>'+
+      '<div class="mt"><div class="ttag">편집</div><div class="mlabel">노드 편집</div></div>'+
+      '<button class="x" data-close>✕</button>'+
+    '</div>'+
+    '<div class="modal-body">'+
+      '<div class="row">'+
+        '<div class="field" style="flex:0 0 150px"><label>타입</label><select id="eType"'+(n.type==="central"?" disabled":"")+'>'+typeOpts+'</select></div>'+
+        '<div class="field"><label>라벨 (제목)</label><input id="eLabel" type="text" value="'+esc(n.label)+'"></div>'+
+      '</div>'+
+      '<div class="field"><label>메타 — 조문번호/사건번호 등 (선택)</label><input id="eMeta" class="mono" type="text" value="'+esc(n.meta||"")+'" placeholder="예: 대판 2025. 8. 28. 2022다284520 / 민사집행법 §44"></div>'+
+      '<div class="field"><label>상세 내용</label><textarea id="eDetail" placeholder="판례: 사실관계 + 법리 + 결론 / 조문: 📜 전문 / 개념: 일반정의 → 주체·객체·시점">'+esc(n.detail||"")+'</textarea></div>'+
+      '<div class="row">'+
+        '<div class="field" style="flex:0 0 120px"><label>중요도 ⭐</label><select id="eImp">'+
+          [0,1,2,3,4,5].map(i=>'<option value="'+i+'"'+(n.importance===i?" selected":"")+'>'+(i===0?"—":"★".repeat(i))+'</option>').join("")+
+        '</select></div>'+
+        '<div class="field" style="flex:0 0 130px"><label>암기</label><select id="eMemo">'+
+          '<option value="null"'+(!n.memo?" selected":"")+'>—</option>'+
+          '<option value="required"'+(n.memo==="required"?" selected":"")+'>🔴 필수</option>'+
+          '<option value="recommended"'+(n.memo==="recommended"?" selected":"")+'>🟡 권장</option>'+
+        '</select></div>'+
+        '<div class="field" style="flex:0 0 90px"><label>M 마커</label><select id="eM">'+
+          '<option value="false"'+(!n.m?" selected":"")+'>—</option>'+
+          '<option value="true"'+(n.m?" selected":"")+'>M</option>'+
+        '</select></div>'+
+        verRow+
+      '</div>'+
+    '</div>'+
+    '<div class="modal-foot">'+
+      '<button class="btn" data-close>취소</button>'+
+      '<button class="btn primary" id="eSave"><span class="ic">✓</span>저장</button>'+
+    '</div>';
+  document.getElementById("eSave").onclick=()=>{
+    n.label=document.getElementById("eLabel").value.trim()||"(제목 없음)";
+    n.meta=document.getElementById("eMeta").value.trim();
+    n.detail=document.getElementById("eDetail").value;
+    n.importance=parseInt(document.getElementById("eImp").value,10);
+    const mm=document.getElementById("eMemo").value; n.memo=(mm==="null"?null:mm);
+    n.m=document.getElementById("eM").value==="true";
+    if(n.type!=="central"){ n.type=document.getElementById("eType").value; }
+    const ev=document.getElementById("eVerified");
+    if(ev){ const v=ev.value; n.verified=(v==="null"?null:(v==="true")); }
+    closeOverlays(); render(); toast("저장됨");
+  };
+}
+
+/* ---------------- add / delete ---------------- */
+const addPop=document.getElementById("addPop");
+let addTargetId=null;
+function openAddPop(id,x,y){
+  addTargetId=id;
+  let h="";
+  ADD_ORDER.forEach(k=>{const t=TYPES[k];
+    h+='<button data-type="'+k+'"><span class="pc" style="background:'+t.color+'">'+esc(t.icon)+'</span>'+esc(t.name)+' 추가</button>';});
+  addPop.innerHTML=h;
+  addPop.style.left=Math.min(x,window.innerWidth-190)+"px";
+  addPop.style.top=(y+8)+"px";
+  addPop.classList.add("open");
+}
+addPop.addEventListener("click",e=>{
+  const b=e.target.closest("button[data-type]"); if(!b) return;
+  const f=findNode(addTargetId); if(!f) return;
+  const nn=blankNode(b.dataset.type,"["+TYPES[b.dataset.type].name+" 입력]");
+  f.node.children=f.node.children||[];
+  f.node.children.push(nn);
+  f.node.collapsed=false;
+  addPop.classList.remove("open");
+  render();
+  openDetail(nn.id); // jump straight to editing the new node
+});
+document.addEventListener("click",e=>{ if(!e.target.closest("#addPop")&&!e.target.closest("[data-add]")) addPop.classList.remove("open"); });
+
+/* ---------------- tree click delegation ---------------- */
+document.getElementById("tree").addEventListener("click",e=>{
+  const tog=e.target.closest("[data-toggle]");
+  if(tog){const f=findNode(tog.dataset.toggle); if(f){f.node.collapsed=!f.node.collapsed; render();} return;}
+  const add=e.target.closest("[data-add]");
+  if(add){const r=add.getBoundingClientRect(); openAddPop(add.dataset.add,r.left,r.bottom); return;}
+  const del=e.target.closest("[data-del]");
+  if(del){
+    const f=findNode(del.dataset.del);
+    if(f&&f.parent){
+      if(confirm("이 노드와 하위 노드를 모두 삭제할까?")){
+        f.parent.children=f.parent.children.filter(c=>c.id!==f.node.id);
+        render(); toast("삭제됨");
+      }
+    }
+    return;
+  }
+  const card=e.target.closest(".node-card");
+  if(card){ openDetail(card.dataset.id); }
+});
+
+/* ---------------- meta field binding ---------------- */
+document.getElementById("mSubject").addEventListener("input",e=>{state.meta.subject=e.target.value;});
+document.getElementById("mTopic").addEventListener("input",e=>{state.meta.topic=e.target.value;});
+
+/* ---------------- toolbar ---------------- */
+document.getElementById("btnEdit").addEventListener("click",function(){
+  editMode=!editMode;
+  this.classList.toggle("on",editMode);
+  this.innerHTML=editMode?'<span class="ic">✓</span>편집 중':'<span class="ic">✎</span>편집모드';
+  render(); toast(editMode?"편집모드 ON — 카드를 눌러 수정, ＋로 추가":"편집모드 OFF");
+});
+
+/* preset */
+const ovPreset=document.getElementById("ovPreset");
+const PRESETS=[
+  {key:"rj", t:"central", title:"기판력의 시적 범위", sub:"완성 예시 (민사소송법) · 검증된 판례 포함", fn:exampleResJudicata},
+  {key:"blank", t:"definition", title:"빈 템플릿", sub:"모든 노드 타입이 stub으로 — 아무 단원에나", fn:blankTemplate},
+  {key:"crim", t:"exception", title:"형법 스켈레톤", sub:"중심개념→구성요건(객관/주관)→위법성·책임→판례", fn:skelCriminal},
+  {key:"cpro", t:"principle", title:"형사소송법 스켈레톤", sub:"의의→요건→효과→예외→판례", fn:skelCrimPro},
+  {key:"comm", t:"statute", title:"상법 스켈레톤", sub:"의의→요건·효과→판례→사례", fn:skelCommercial}
+];
+function renderPresetList(){
+  const b=document.getElementById("presetBody");
+  b.innerHTML='<p style="font-size:12.5px;color:var(--ink-faint);margin:0 0 12px">선택하면 현재 개념도를 대체해. 작업 중이면 먼저 [내보내기]로 저장해 둬.</p>'+
+    PRESETS.map(p=>{const t=TYPES[p.t];
+      return '<button class="opt" data-preset="'+p.key+'"><span class="ob" style="background:'+t.color+'">'+esc(t.icon)+'</span>'+
+        '<span class="ot"><b>'+esc(p.title)+'</b><span>'+esc(p.sub)+'</span></span></button>';}).join("");
+}
+document.getElementById("presetBody").addEventListener("click",e=>{
+  const b=e.target.closest("[data-preset]"); if(!b) return;
+  const p=PRESETS.find(x=>x.key===b.dataset.preset); if(!p) return;
+  if(!confirm("현재 개념도를 '"+p.title+"'(으)로 바꿀까? 저장 안 한 변경은 사라져.")) return;
+  state=p.fn(); editMode=false;
+  const eb=document.getElementById("btnEdit"); eb.classList.remove("on"); eb.innerHTML='<span class="ic">✎</span>편집모드';
+  closeOverlays(); render(); toast("'"+p.title+"' 불러옴");
+});
+document.getElementById("btnPreset").addEventListener("click",()=>{renderPresetList();ovPreset.classList.add("open");});
+
+/* export */
+const ovExport=document.getElementById("ovExport");
+function nodeToMd(n,depth,lines){
+  const t=TYPES[n.type];
+  const head="#".repeat(Math.min(6,depth+1));
+  let badge="";
+  if(n.importance>0) badge+=" "+"★".repeat(n.importance);
+  if(n.memo==="required") badge+=" 🔴"; else if(n.memo==="recommended") badge+=" 🟡";
+  if(n.m) badge+=" [M]";
+  if(t.verifiable&&n.verified===true) badge+=" ✓검증";
+  if(t.verifiable&&n.verified===false) badge+=" ⚠미검증";
+  const metaTxt=n.meta?"  `"+n.meta+"`":"";
+  lines.push(head+" "+t.md+" "+n.label+metaTxt+badge);
+  if(n.detail&&n.detail.trim()){ lines.push(""); lines.push(n.detail.trim()); }
+  lines.push("");
+  (n.children||[]).forEach(c=>nodeToMd(c,depth+1,lines));
+}
+function toMarkdown(){
+  const lines=[];
+  lines.push("# "+state.meta.subject+" — "+state.meta.topic+" 개념도");
+  lines.push("");
+  nodeToMd(state.root,1,lines);
+  lines.push("---");
+  lines.push("> 법학 개념도 메이커로 생성. 판례번호·조문은 사용 전 원문 검증 권장.");
+  return lines.join("\n");
+}
+let exportMode="json";
+function refreshExport(){
+  document.getElementById("exArea").value = exportMode==="json"
+    ? JSON.stringify({meta:state.meta,root:state.root},null,2)
+    : toMarkdown();
+}
+document.getElementById("tabJson").onclick=function(){exportMode="json";this.classList.add("on");document.getElementById("tabMd").classList.remove("on");refreshExport();};
+document.getElementById("tabMd").onclick=function(){exportMode="md";this.classList.add("on");document.getElementById("tabJson").classList.remove("on");refreshExport();};
+document.getElementById("btnExport").addEventListener("click",()=>{exportMode="json";document.getElementById("tabJson").classList.add("on");document.getElementById("tabMd").classList.remove("on");refreshExport();ovExport.classList.add("open");});
+document.getElementById("btnCopy").addEventListener("click",()=>{
+  const ta=document.getElementById("exArea");
+  const txt=ta.value;
+  const done=()=>toast("복사됨");
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(()=>{ta.focus();ta.select();try{document.execCommand("copy");done();}catch(e){toast("복사 실패 — 직접 전체선택(Ctrl/Cmd+A) 후 복사");}});
+  } else { ta.focus();ta.select(); try{document.execCommand("copy");done();}catch(e){toast("복사 실패 — 직접 선택해서 복사");} }
+});
+document.getElementById("btnDownload").addEventListener("click",()=>{
+  const isJson=exportMode==="json";
+  const txt=document.getElementById("exArea").value;
+  const safe=(state.meta.subject+"_"+state.meta.topic).replace(/[\\/:*?"<>|\s]+/g,"_");
+  try{
+    const blob=new Blob([txt],{type:isJson?"application/json":"text/markdown"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url; a.download=safe+(isJson?".json":".md");
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    toast("파일 저장 시도됨");
+  }catch(e){ toast("다운로드 차단됨 — [복사]로 받아줘"); }
+});
+
+/* import */
+const ovImport=document.getElementById("ovImport");
+document.getElementById("btnImport").addEventListener("click",()=>{document.getElementById("imArea").value="";ovImport.classList.add("open");});
+document.getElementById("btnDoImport").addEventListener("click",()=>{
+  const raw=document.getElementById("imArea").value.trim();
+  if(!raw){toast("JSON을 붙여넣어줘");return;}
+  let obj;
+  try{ obj=JSON.parse(raw); }catch(e){ toast("JSON 형식 오류 — 다시 확인해줘"); return; }
+  if(!obj||!obj.root||!obj.root.type){ toast("개념도 JSON이 아닌 것 같아 (root 없음)"); return; }
+  if(!obj.meta) obj.meta={subject:"",topic:""};
+  reseed(obj.root);
+  // normalise missing fields
+  (function norm(n){ n.importance=n.importance||0; n.memo=n.memo||null; n.m=!!n.m;
+    if(n.verified===undefined)n.verified=null; n.collapsed=!!n.collapsed; n.children=n.children||[];
+    if(!TYPES[n.type]) n.type="definition"; n.children.forEach(norm); })(obj.root);
+  state=obj; editMode=false;
+  const eb=document.getElementById("btnEdit"); eb.classList.remove("on"); eb.innerHTML='<span class="ic">✎</span>편집모드';
+  closeOverlays(); render(); toast("개념도 불러옴");
+});
+
+/* help */
+const ovHelp=document.getElementById("ovHelp");
+function renderHelp(){
+  document.getElementById("helpBody").innerHTML=
+  '<h3>이 도구의 핵심 — 노드 문법</h3>'+
+  '<p>개념도에 들어가는 <b>노드 타입(문법)</b>은 과목을 안 가려. 내용만 갈아끼우면 어떤 단원에든 똑같이 쓸 수 있어. 이게 재사용의 핵심.</p>'+
+  '<ul>'+
+    '<li><b>◎ 중심개념</b> — 단원/쟁점의 중심 (1개)</li>'+
+    '<li><b>≣ 정의·기준</b> — 일반정의 먼저 → 주체/객체/시점 분석</li>'+
+    '<li><b>§ 조문</b> — 📜 전문 그대로 (메타칸에 조문번호)</li>'+
+    '<li><b>⚖ 원칙·효과</b> — 핵심 법리·효과</li>'+
+    '<li><b>⊘ 예외·한계</b> — 예외·반대견해·한계</li>'+
+    '<li><b>⚑ 판례</b> — 사실관계+법리+결론, 사건번호는 메타칸 / <b>검증배지(✓·⚠)</b>로 fabrication 차단</li>'+
+    '<li><b>✱ 사례·적용</b> — 💡미니사례 / 📌시험포인트</li>'+
+    '<li><b>⇄ 비교</b> · <b>✦ 두문자</b></li>'+
+  '</ul>'+
+  '<h3>다른 과목에 쓰는 법</h3>'+
+  '<p>같은 문법이 과목마다 이렇게 매핑돼 ([과목 프리셋]에 스켈레톤 들어있어):</p>'+
+  '<table class="maptbl"><tr><th>과목</th><th>중심개념 아래 기본 가지</th></tr>'+
+    '<tr><td>민소</td><td>정의(표준시) → 조문 → 원칙(차단효) → 예외(형성권) → 판례 → 사례</td></tr>'+
+    '<tr><td>형법</td><td>정의 → 조문 → 객관적 구성요건 → 주관적 구성요건 → 위법성·책임 → 판례 → 사례</td></tr>'+
+    '<tr><td>형소</td><td>의의 → 조문 → 요건 → 효과 → 예외 → 판례</td></tr>'+
+    '<tr><td>상법</td><td>의의 → 조문 → 요건·효과 → 판례 → 사례</td></tr>'+
+  '</table>'+
+  '<h3>조작</h3>'+
+  '<ul>'+
+    '<li><b>카드 클릭</b> — 상세 보기 (편집모드면 편집창)</li>'+
+    '<li><b>▾/▸</b> — 하위 노드 접기/펼치기</li>'+
+    '<li><b>편집모드</b> — 카드의 <code>＋</code>로 자식 추가, <code>✕</code>로 삭제</li>'+
+    '<li><b>내보내기</b> — <b>JSON</b>(나중에 [가져오기]로 복원) / <b>Markdown</b>(정리 파일·Project Knowledge에 붙여넣기)</li>'+
+  '</ul>'+
+  '<h3>저장 (중요)</h3>'+
+  '<p>작업 내용은 <b>이 세션에서만</b> 유지돼 (브라우저 저장 안 함). 끝나기 전에 꼭 <b>[내보내기 → JSON]</b>으로 받아두고, 다음에 <b>[가져오기]</b>로 이어서 작업해.</p>';
+}
+document.getElementById("btnHelp").addEventListener("click",()=>{renderHelp();ovHelp.classList.add("open");});
+
+/* ---------------- overlay close ---------------- */
+function closeOverlays(){document.querySelectorAll(".overlay").forEach(o=>o.classList.remove("open"));}
+document.querySelectorAll(".overlay").forEach(o=>{
+  o.addEventListener("click",e=>{ if(e.target===o||e.target.closest("[data-close]")) closeOverlays(); });
+});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeOverlays(); });
+
+/* ---------------- toast ---------------- */
+let toastT=null;
+function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove("show"),2200);}
+
+/* ---------------- init ---------------- */
+renderLegend();
+render();
+</script>
+</body>
+</html>
