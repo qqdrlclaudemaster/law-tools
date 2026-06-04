@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<title>법학 판단 흐름도</title>
+<style>
+  :root{
+    --paper:#f7f3ea; --paper-2:#efe9da; --card:#fffdf8;
+    --ink:#211c15; --ink-soft:#5a5141; --ink-faint:#8a7f6a;
+    --line:#d8cfba; --line-soft:#e7dfcd; --seal:#9b1c1c; --gold:#b08900;
+    --shadow:0 1px 2px rgba(40,30,10,.05),0 8px 24px rgba(40,30,10,.07);
+    --shadow-lg:0 12px 40px rgba(40,30,10,.18);
+    --q:#1d4ed8;            /* question accent */
+    --ok-fg:#0f766e; --ok-bg:#dcfce7; --ok-bd:#a7e3c8;
+    --no-fg:#b91c1c; --no-bg:#fde5e3; --no-bd:#f3c0bb;
+    --mb-fg:#b45309; --mb-bg:#fef3c7; --mb-bd:#f2dca0;
+    --font-sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+    --font-mono:"JetBrains Mono","D2Coding","SFMono-Regular","SF Mono",Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:var(--font-sans);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;
+    background:radial-gradient(1200px 600px at 12% -8%, #fffdf6 0%, rgba(255,255,255,0) 55%),
+      radial-gradient(900px 500px at 105% 8%, #f3eedf 0%, rgba(255,255,255,0) 60%), var(--paper);
+    background-attachment:fixed;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.55;
+    background-image:radial-gradient(rgba(120,100,60,.05) 1px, transparent 1px);background-size:4px 4px}
+
+  header{position:sticky;top:0;z-index:30;background:rgba(247,243,234,.88);backdrop-filter:saturate(140%) blur(8px);border-bottom:1px solid var(--line)}
+  .bar{max-width:1100px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+  .brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+  .brand .seal{font-family:var(--font-mono);font-weight:700;font-size:13px;letter-spacing:.5px;color:#fff;background:var(--seal);border-radius:6px;padding:3px 7px;white-space:nowrap;box-shadow:inset 0 0 0 2px rgba(255,255,255,.18)}
+  .brand h1{font-size:17px;margin:0;font-weight:800;letter-spacing:-.2px;white-space:nowrap}
+  .brand small{color:var(--ink-faint);font-size:11px;font-family:var(--font-mono)}
+  .titlebox{flex:1;min-width:160px;text-align:center}
+  .titlebox .tsub{font-size:11px;color:var(--ink-faint);font-weight:700;letter-spacing:.4px}
+  .titlebox .ttop{font-size:14px;font-weight:800;letter-spacing:-.2px;word-break:keep-all}
+  .tools{display:flex;gap:6px;flex-wrap:wrap}
+  button.btn{font-family:var(--font-sans);font-size:12.5px;font-weight:700;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer;transition:.14s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  button.btn:hover{border-color:var(--seal);color:var(--seal);transform:translateY(-1px);box-shadow:var(--shadow)}
+  button.btn .ic{font-family:var(--font-mono);font-weight:800}
+  button.btn.primary{background:var(--ink);color:#fff8ee;border-color:var(--ink)}
+  button.btn.primary:hover{background:var(--seal);border-color:var(--seal);color:#fff}
+
+  /* mode switch */
+  .modes{max-width:1100px;margin:0 auto;padding:8px 18px 10px;display:flex;gap:8px;align-items:center}
+  .seg{display:inline-flex;background:var(--paper-2);border:1px solid var(--line);border-radius:10px;padding:3px}
+  .seg button{border:none;background:transparent;font-family:var(--font-sans);font-size:12.5px;font-weight:800;color:var(--ink-soft);padding:6px 14px;border-radius:8px;cursor:pointer;transition:.12s}
+  .seg button.on{background:var(--ink);color:#fff8ee}
+  .reset-hint{margin-left:auto;font-size:11px;color:var(--ok-fg);font-weight:700}
+
+  main{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:18px 18px 120px}
+
+  /* breadcrumb */
+  .crumbs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px}
+  .crumb{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-soft);background:var(--card);border:1px solid var(--line-soft);border-radius:999px;padding:4px 11px}
+  .crumb .n{font-family:var(--font-mono);font-weight:800;color:var(--ink-faint);font-size:10px}
+
+  /* question */
+  .qcard{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--q);border-radius:14px;padding:18px 18px 8px;box-shadow:var(--shadow);animation:rise .22s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .qtag{font-size:11px;font-weight:800;color:var(--q);letter-spacing:.5px;margin-bottom:6px}
+  .qtext{font-size:18px;font-weight:800;letter-spacing:-.3px;line-height:1.4;word-break:keep-all}
+  .qhint{font-size:13px;color:var(--ink-faint);margin:8px 0 4px;word-break:keep-all}
+  .opts{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+  .opt-btn{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;font-family:inherit;font-size:14.5px;color:var(--ink);line-height:1.45;transition:.13s;word-break:keep-all}
+  .opt-btn:hover{border-color:var(--q);background:#f5f8ff;transform:translateX(2px);box-shadow:var(--shadow)}
+  .opt-btn .arr{font-family:var(--font-mono);font-weight:800;color:var(--ink-faint);flex-shrink:0;font-size:17px}
+  .opt-btn:hover .arr{color:var(--q)}
+
+  /* result */
+  .rcard{border-radius:14px;padding:20px;animation:rise .22s ease both;border:1px solid transparent}
+  .rcard.yes{background:var(--ok-bg);border-color:var(--ok-bd)}
+  .rcard.no{background:var(--no-bg);border-color:var(--no-bd)}
+  .rcard.maybe{background:var(--mb-bg);border-color:var(--mb-bd)}
+  .rhead{display:flex;align-items:center;gap:11px}
+  .ricon{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-family:var(--font-mono);font-weight:800;font-size:18px;flex:0 0 auto}
+  .yes .ricon{background:var(--ok-fg)} .no .ricon{background:var(--no-fg)} .maybe .ricon{background:var(--mb-fg)}
+  .rtitle{font-size:18px;font-weight:800;letter-spacing:-.3px;word-break:keep-all}
+  .yes .rtitle{color:var(--ok-fg)} .no .rtitle{color:var(--no-fg)} .maybe .rtitle{color:var(--mb-fg)}
+  .rsub{font-size:13px;font-weight:700;margin:6px 0 0 41px;word-break:keep-all}
+  .yes .rsub{color:var(--ok-fg)} .no .rsub{color:var(--no-fg)} .maybe .rsub{color:var(--mb-fg)}
+  .rwhy{font-size:14.5px;line-height:1.7;color:var(--ink);margin:14px 0 0;word-break:keep-all}
+  .rrefs{margin-top:14px;font-size:13px;color:var(--ink-soft)}
+  .rrefs b{font-weight:800;color:var(--ink)}
+  .rrefs .mono{font-family:var(--font-mono);font-size:12.5px}
+  .rverify{display:inline-block;margin-left:8px;font-size:10px;font-weight:800;border-radius:5px;padding:1px 6px;vertical-align:1px}
+  .rverify.ok{color:var(--ok-fg);background:#cdeede} .rverify.no{color:var(--mb-fg);background:#f6e6b8}
+
+  .solve-ctl{margin-top:16px;display:flex;gap:8px}
+
+  /* overview (outline) */
+  .ov-row{display:flex;align-items:flex-start;gap:0;margin:0}
+  .ov-line{position:relative}
+  .ov-node{margin:5px 0}
+  .edge-chip{display:inline-block;font-size:11.5px;color:var(--ink-soft);background:var(--paper-2);border:1px solid var(--line);border-radius:999px;padding:2px 10px;margin:6px 0 2px}
+  .edge-chip .e{font-family:var(--font-mono);color:var(--ink-faint);font-weight:800;margin-right:4px}
+  .ov-card{border-radius:10px;padding:9px 12px;border:1px solid var(--line);background:var(--card);display:inline-block;max-width:560px;word-break:keep-all}
+  .ov-card.q{border-left:4px solid var(--q)}
+  .ov-card.yes{border-left:4px solid var(--ok-fg);background:var(--ok-bg)}
+  .ov-card.no{border-left:4px solid var(--no-fg);background:var(--no-bg)}
+  .ov-card.maybe{border-left:4px solid var(--mb-fg);background:var(--mb-bg)}
+  .ov-card .lab{font-size:10px;font-weight:800;letter-spacing:.4px;color:var(--ink-faint)}
+  .ov-card.q .lab{color:var(--q)}
+  .ov-card .txt{font-size:13.5px;font-weight:700;line-height:1.4}
+  .ov-card .meta{font-size:11.5px;color:var(--ink-soft);margin-top:3px}
+  .ov-children{border-left:1.5px dashed var(--line);margin-left:14px;padding-left:16px}
+  .ov-ref{display:inline-block;margin-top:3px;font-size:11px;color:var(--ink-faint)}
+  .ov-loop{font-size:12px;color:var(--ink-faint);font-style:italic;padding:4px 0}
+
+  /* modal */
+  .overlay{position:fixed;inset:0;z-index:60;background:rgba(33,28,21,.42);backdrop-filter:blur(2px);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+  .overlay.open{display:flex}
+  .modal{background:var(--paper);border:1px solid var(--line);border-radius:16px;max-width:620px;width:100%;box-shadow:var(--shadow-lg);overflow:hidden;animation:rise .2s ease both}
+  .modal-head{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line);background:linear-gradient(var(--card),var(--paper))}
+  .modal-head .chip{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:#fff;font-family:var(--font-mono);font-weight:800;font-size:14px}
+  .modal-head .mt{flex:1;min-width:0}
+  .modal-head .ttag{font-size:11px;font-weight:800;color:var(--ink-faint)}
+  .modal-head .mlabel{font-size:16px;font-weight:800;letter-spacing:-.3px}
+  .x{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:16px;color:var(--ink-soft)}
+  .x:hover{border-color:var(--seal);color:var(--seal)}
+  .modal-body{padding:16px 18px;max-height:64vh;overflow:auto}
+  .modal-foot{display:flex;gap:8px;justify-content:flex-end;padding:13px 18px;border-top:1px solid var(--line);background:var(--card)}
+  .tabs{display:flex;gap:6px;margin-bottom:12px}
+  .tab{font-size:12.5px;font-weight:800;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--ink-soft)}
+  .tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .exarea{width:100%;min-height:300px;font-family:var(--font-mono);font-size:12px;line-height:1.5;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--card);color:var(--ink);resize:vertical;outline:none}
+  .help h3{font-size:14px;margin:18px 0 8px;color:var(--seal);font-weight:800}
+  .help h3:first-child{margin-top:2px}
+  .help p,.help li{font-size:13.5px;line-height:1.62;color:var(--ink);word-break:keep-all}
+  .help ul{margin:6px 0;padding-left:18px}
+  .help code{font-family:var(--font-mono);font-size:12px;background:var(--card);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);z-index:90;background:var(--ink);color:#fff8ee;font-size:13px;font-weight:700;padding:10px 16px;border-radius:10px;box-shadow:var(--shadow-lg);opacity:0;transition:.22s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:640px){
+    .brand small{display:none} .brand h1{font-size:15px}
+    .titlebox{order:3;width:100%;text-align:left}
+    main{padding:16px 14px 120px}
+    .qtext{font-size:16px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <div class="brand"><span class="seal">法 FLOW</span><h1>법학 판단 흐름도</h1><small>decision flow</small></div>
+    <div class="titlebox"><div class="tsub" id="hSub">민사소송법</div><div class="ttop" id="hTop">단원</div></div>
+    <div class="tools">
+      <button class="btn" id="btnImport"><span class="ic">↥</span>가져오기</button>
+      <button class="btn" id="btnExport"><span class="ic">↧</span>내보내기</button>
+      <button class="btn" id="btnHelp"><span class="ic">?</span>도움말</button>
+    </div>
+  </div>
+  <div class="modes">
+    <div class="seg">
+      <button id="mSolve" class="on">▶ 풀어보기</button>
+      <button id="mAll">▦ 전체 보기</button>
+    </div>
+    <span class="reset-hint">✓ 브라우저에 자동저장됨</span>
+  </div>
+</header>
+
+<main id="view"></main>
+
+<!-- import -->
+<div class="overlay" id="ovImport">
+  <div class="modal">
+    <div class="modal-head"><span class="chip" style="background:var(--ink)">↥</span><div class="mt"><div class="ttag">IMPORT</div><div class="mlabel">흐름도 JSON 붙여넣기</div></div><button class="x" data-close>✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--ink-faint);margin:0 0 10px">Claude가 만든 흐름도 JSON을 붙여넣으면 그대로 불러와.</p>
+      <textarea class="exarea" id="imArea" placeholder='{ "meta": {...}, "nodes": {...} }'></textarea>
+    </div>
+    <div class="modal-foot"><button class="btn primary" id="btnDoImport"><span class="ic">↥</span>불러오기</button></div>
+  </div>
+</div>
+
+<!-- export -->
+<div class="overlay" id="ovExport">
+  <div class="modal">
+    <div class="modal-head"><span class="chip" style="background:var(--ink)">↧</span><div class="mt"><div class="ttag">EXPORT</div><div class="mlabel">내보내기</div></div><button class="x" data-close>✕</button></div>
+    <div class="modal-body">
+      <div class="tabs"><button class="tab on" id="tabJson">JSON (재불러오기용)</button><button class="tab" id="tabMd">Markdown (정리용)</button></div>
+      <textarea class="exarea" id="exArea" readonly></textarea>
+    </div>
+    <div class="modal-foot"><button class="btn" id="btnDownload"><span class="ic">⇩</span>파일로 저장</button><button class="btn primary" id="btnCopy"><span class="ic">⧉</span>복사</button></div>
+  </div>
+</div>
+
+<!-- help -->
+<div class="overlay" id="ovHelp">
+  <div class="modal">
+    <div class="modal-head"><span class="chip" style="background:var(--seal)">?</span><div class="mt"><div class="ttag">GUIDE</div><div class="mlabel">사용법 & 노드 문법</div></div><button class="x" data-close>✕</button></div>
+    <div class="modal-body help" id="helpBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ===== demo: 변론종결 후 승계인 판정 (ㅇㅇ 작성 흐름을 표준 JSON으로) ===== */
+function demoFlow(){return {
+  meta:{subject:"민사소송법", topic:"변론종결 후 승계인 판정 (기판력 주관적 범위)", start:"start"},
+  nodes:{
+    start:{type:"question", q:"후소가 전소와 '객관적 범위'에 해당하나요?", hint:"소송물 동일 · 선결관계 · 모순관계 중 하나여야 함", options:[
+      {label:"아니다 — 소송물 다르고 선결·모순관계도 아님", crumb:"객관적범위 해당X", to:"v_obj"},
+      {label:"그렇다 — 객관적 범위 통과", crumb:"객관적범위 통과", to:"q_what"}]},
+    q_what:{type:"question", q:"그 제3자는 무엇을 승계했나요?", options:[
+      {label:"소송물(권리·의무) 자체 — 채권양수·면책적 채무인수·상속", crumb:"소송물 자체", to:"v_self"},
+      {label:"계쟁물 — 소송 목적물인 물건", crumb:"계쟁물", to:"q_type"}]},
+    q_type:{type:"question", q:"전소의 소송물이 어떤 청구권인가요?", options:[
+      {label:"채권적 청구권 — 매매·취득시효 이전등기청구 등", crumb:"채권적", to:"v_chae"},
+      {label:"물권적 청구권 — 소유권에 기한 말소·인도·방해배제", crumb:"물권적", to:"q_who"}]},
+    q_who:{type:"question", q:"전소에서 '패소'한 쪽이 누구인가요? (그 패소자로부터 승계)", options:[
+      {label:"피고 패소 — 말소·인도할 '물권적 의무'가 확정됨", crumb:"피고 패소", to:"q_def"},
+      {label:"원고 패소 — 원고의 '물권적 청구권'이 부정됨", crumb:"원고 패소", to:"v_wongo"}]},
+    q_def:{type:"question", q:"그 제3자에게 실체법상 '고유의 방어방법'이 있나요?", hint:"동산 선의취득(§249), 통정허위표시 선의의 제3자(§108②) 등", options:[
+      {label:"있다 — 선의취득·선의의 제3자 등 독자적 보호 지위", crumb:"고유방어 있음", to:"v_siljil"},
+      {label:"없다 — 단순 양수·경락·전득 등", crumb:"고유방어 없음", to:"v_seung"}]},
+    v_obj:{type:"result", verdict:"no", title:"기판력 미치지 않음", sub:"주관적 범위 검토 불요",
+      why:"객관적 범위에 해당하지 않으면, 설령 변론종결 후 승계인이라도 기판력이 미치지 않아. 승계인 여부(주관적 범위)를 따지기 전에 객관적 범위(소송물 동일·선결·모순)부터 검토해야 해.", refs:"2013다53939"},
+    v_self:{type:"result", verdict:"yes", title:"변론종결 후 승계인에 해당",
+      why:"소송물 자체를 승계한 자는 물권적이든 채권적이든 불문하고 항상 변론종결 후 승계인이야. 다만 상호를 계속 사용하는 영업양수인은 면책적 인수 등 특별사정이 없으면 해당하지 않아(78다2330).", refs:"§218① / 78다2330(한계)"},
+    v_chae:{type:"result", verdict:"no", title:"변론종결 후 승계인 아님",
+      why:"채권적 청구권은 특정 당사자 사이의 인적 관계라, 계쟁물을 승계해도 그 채권관계의 당사자가 되는 게 아니야. 그래서 계쟁물 승계만으로는 승계인이 아님.", refs:"92다25151 · 96다41649"},
+    v_wongo:{type:"result", verdict:"no", title:"변론종결 후 승계인 아님", sub:"승계인 자체가 아님 → 본안 심리 가능",
+      why:"소송물은 청구권(소유권 자체 X)이라 기판력은 청구권 부존재에만 미치고 소유권 존부엔 미치지 않아. 패소 원고로부터 소유권을 양수한 자는 자기 소유권의 일반적 효력으로 '새 청구권'을 취득한 것이지 패소자의 청구권을 승계한 게 아니야. 따라서 승계인 자체가 아니라 후소는 기판력에 저촉되지 않고 본안 심리가 가능해.", refs:"84다카148 · 98다6855 · 2019다261381"},
+    v_siljil:{type:"result", verdict:"no", title:"변론종결 후 승계인 아님", sub:"실질설(통설·판례)",
+      why:"실질설은 제3자 보호 여부로 승계인의 범위 자체를 결정해. 선의취득자·선의의 제3자처럼 고유의 방어방법이 있는 자는 전소 소송물이 물권적이라 해도 애초에 승계인으로 보지 않고, 승계집행문도 부여되지 않아.", refs:"실질설(통설·판례)"},
+    v_seung:{type:"result", verdict:"yes", title:"변론종결 후 승계인에 해당",
+      why:"물권적 의무가 확정된 패소자(피고)로부터 계쟁물·물권을 승계한 자(경락인·전득자·근저당권자)는 변론종결 후 승계인이야. 경매저지 절차나 등기부상 조처 여부는 불문하고 기판력이 미쳐.", refs:"93다34183 · 74다1046 · 72다1842"}
+  }
+};}
+
+/* ===== state + autosave ===== */
+const LS_KEY="lawFlowchart_v1";
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(flow)); }catch(e){} }
+function loadState(){ try{ const raw=localStorage.getItem(LS_KEY); if(raw){ const o=JSON.parse(raw); if(valid(o)) return o; } }catch(e){} return null; }
+function valid(o){ return o && o.nodes && typeof o.nodes==="object" && startId(o) && o.nodes[startId(o)]; }
+function startId(o){ return (o.meta&&o.meta.start) || Object.keys(o.nodes||{})[0]; }
+
+let flow = loadState() || demoFlow();
+let mode = "solve";
+let path = [startId(flow)];   // stack of node ids
+let crumbs = [];              // breadcrumb labels, parallel to choices made
+
+const view=document.getElementById("view");
+const VICON={yes:"✓",no:"✕",maybe:"◐"};
+
+/* ===== header ===== */
+function syncHeader(){
+  document.getElementById("hSub").textContent=(flow.meta&&flow.meta.subject)||"";
+  document.getElementById("hTop").textContent=(flow.meta&&flow.meta.topic)||"흐름도";
+}
+
+/* ===== SOLVE mode ===== */
+function renderSolve(){
+  const id=path[path.length-1];
+  const n=flow.nodes[id];
+  let h="";
+  if(crumbs.length){ h+='<div class="crumbs">'; crumbs.forEach((c,i)=>{ h+='<span class="crumb"><span class="n">'+(i+1)+'</span>'+esc(c)+'</span>'; }); h+='</div>'; }
+  if(!n){ h+='<div class="rcard no"><div class="rhead"><span class="ricon">!</span><span class="rtitle">노드를 찾을 수 없음</span></div><p class="rwhy">JSON의 연결(to)이 가리키는 노드가 없어. [가져오기]에서 흐름도를 다시 확인해줘.</p></div>'; view.innerHTML=h; return; }
+  if(n.type==="result"){
+    const v=(n.verdict==="yes"||n.verdict==="no")?n.verdict:"maybe";
+    h+='<div class="rcard '+v+'">';
+    h+='<div class="rhead"><span class="ricon">'+VICON[v]+'</span><span class="rtitle">'+esc(n.title||"")+'</span></div>';
+    if(n.sub) h+='<div class="rsub">'+esc(n.sub)+'</div>';
+    if(n.why) h+='<p class="rwhy"></p>';
+    if(n.refs){ let vb=""; if(n.verified===true)vb='<span class="rverify ok">✓검증</span>'; else if(n.verified===false)vb='<span class="rverify no">⚠미검증</span>';
+      h+='<div class="rrefs"><b>관련 판례·근거:</b> <span class="mono">'+esc(n.refs)+'</span>'+vb+'</div>'; }
+    h+='</div>';
+    h+='<div class="solve-ctl">';
+    if(path.length>1) h+='<button class="btn" id="back"><span class="ic">←</span>한 단계 뒤로</button>';
+    h+='<button class="btn primary" id="restart"><span class="ic">↻</span>처음부터</button></div>';
+    view.innerHTML=h;
+    if(n.why) view.querySelector(".rwhy").textContent=n.why;  // preserve newlines via textContent
+  } else {
+    h+='<div class="qcard"><div class="qtag">질문 '+path.length+'</div>';
+    h+='<div class="qtext">'+esc(n.q||"")+'</div>';
+    if(n.hint) h+='<div class="qhint">'+esc(n.hint)+'</div>';
+    h+='<div class="opts">';
+    (n.options||[]).forEach((o,i)=>{ h+='<button class="opt-btn" data-i="'+i+'"><span>'+esc(o.label)+'</span><span class="arr">→</span></button>'; });
+    h+='</div></div>';
+    if(path.length>1) h+='<div class="solve-ctl"><button class="btn" id="back"><span class="ic">←</span>한 단계 뒤로</button></div>';
+    view.innerHTML=h;
+    view.querySelectorAll(".opt-btn").forEach(b=>{ b.onclick=()=>{ const o=n.options[+b.dataset.i]; path.push(o.to); crumbs.push(o.crumb||o.label); renderSolve(); }; });
+  }
+  const bk=document.getElementById("back"); if(bk) bk.onclick=()=>{ path.pop(); crumbs.pop(); renderSolve(); };
+  const rs=document.getElementById("restart"); if(rs) rs.onclick=()=>{ path=[startId(flow)]; crumbs=[]; renderSolve(); };
+}
+
+/* ===== OVERVIEW mode (outline) ===== */
+function renderAll(){
+  const seen={};
+  function walk(id, edge){
+    const n=flow.nodes[id];
+    let h='<div class="ov-node">';
+    if(edge!=null) h+='<div class="edge-chip"><span class="e">└</span>'+esc(edge)+'</div>';
+    if(!n){ h+='<div class="ov-card no"><div class="txt">⚠ 없는 노드: '+esc(id)+'</div></div></div>'; return h; }
+    if(n.type==="result"){
+      const v=(n.verdict==="yes"||n.verdict==="no")?n.verdict:"maybe";
+      h+='<div class="ov-card '+v+'"><span class="lab">'+VICON[v]+' 결과</span><div class="txt">'+esc(n.title||"")+'</div>';
+      if(n.sub) h+='<div class="meta">'+esc(n.sub)+'</div>';
+      if(n.refs) h+='<div class="ov-ref">'+esc(n.refs)+'</div>';
+      h+='</div></div>'; return h;
+    }
+    h+='<div class="ov-card q"><span class="lab">Q</span><div class="txt">'+esc(n.q||"")+'</div></div>';
+    if(seen[id]){ h+='<div class="ov-children"><div class="ov-loop">↩ 위에서 이미 펼친 분기 (반복 생략)</div></div></div>'; return h; }
+    seen[id]=1;
+    h+='<div class="ov-children">';
+    (n.options||[]).forEach(o=>{ h+=walk(o.to, o.label); });
+    h+='</div></div>';
+    return h;
+  }
+  view.innerHTML='<div class="ov-line">'+walk(startId(flow), null)+'</div>';
+}
+
+/* ===== render dispatch ===== */
+function render(){ syncHeader(); if(mode==="solve") renderSolve(); else renderAll(); saveState(); }
+
+/* ===== mode switch ===== */
+document.getElementById("mSolve").onclick=function(){ mode="solve"; this.classList.add("on"); document.getElementById("mAll").classList.remove("on"); render(); };
+document.getElementById("mAll").onclick=function(){ mode="all"; this.classList.add("on"); document.getElementById("mSolve").classList.remove("on"); render(); };
+
+/* ===== import ===== */
+const ovImport=document.getElementById("ovImport");
+document.getElementById("btnImport").onclick=()=>{ document.getElementById("imArea").value=""; ovImport.classList.add("open"); };
+document.getElementById("btnDoImport").onclick=()=>{
+  const raw=document.getElementById("imArea").value.trim();
+  if(!raw){ toast("JSON을 붙여넣어줘"); return; }
+  let o; try{ o=JSON.parse(raw); }catch(e){ toast("JSON 형식 오류 — 다시 확인해줘"); return; }
+  if(!valid(o)){ toast("흐름도 JSON이 아닌 것 같아 (nodes/start 확인)"); return; }
+  if(!o.meta) o.meta={subject:"",topic:"",start:startId(o)};
+  if(!o.meta.start) o.meta.start=startId(o);
+  flow=o; path=[startId(flow)]; crumbs=[]; mode="solve";
+  document.getElementById("mSolve").classList.add("on"); document.getElementById("mAll").classList.remove("on");
+  closeOverlays(); render(); toast("흐름도 불러옴");
+};
+
+/* ===== export ===== */
+const ovExport=document.getElementById("ovExport");
+function toMarkdown(){
+  const lines=[]; lines.push("# "+((flow.meta&&flow.meta.subject)||"")+" — "+((flow.meta&&flow.meta.topic)||"")+" 판단 흐름도"); lines.push("");
+  const seen={};
+  function walk(id, edge, depth){
+    const pad="  ".repeat(depth); const n=flow.nodes[id];
+    if(!n){ lines.push(pad+"- ⚠ 없는 노드: "+id); return; }
+    if(n.type==="result"){ const v=n.verdict==="yes"?"✅":(n.verdict==="no"?"❌":"◐");
+      lines.push(pad+(edge!=null?"- ("+edge+") → ":"- ")+v+" **"+(n.title||"")+"**"+(n.sub?" ("+n.sub+")":""));
+      if(n.why) lines.push(pad+"    "+n.why.replace(/\n+/g," "));
+      if(n.refs) lines.push(pad+"    근거: "+n.refs);
+      return; }
+    lines.push(pad+(edge!=null?"- ("+edge+") → ":"- ")+"**Q. "+(n.q||"")+"**"+(n.hint?"  _"+n.hint+"_":""));
+    if(seen[id]){ lines.push(pad+"    ↩ (이미 펼친 분기 — 반복 생략)"); return; }
+    seen[id]=1;
+    (n.options||[]).forEach(o=>walk(o.to, o.label, depth+1));
+  }
+  walk(startId(flow), null, 0);
+  lines.push(""); lines.push("---"); lines.push("> 법학 판단 흐름도 도구로 생성. 판례번호·결론은 사용 전 원문 검증 권장.");
+  return lines.join("\n");
+}
+let exMode="json";
+function refreshExport(){ document.getElementById("exArea").value = exMode==="json" ? JSON.stringify(flow,null,2) : toMarkdown(); }
+document.getElementById("tabJson").onclick=function(){ exMode="json"; this.classList.add("on"); document.getElementById("tabMd").classList.remove("on"); refreshExport(); };
+document.getElementById("tabMd").onclick=function(){ exMode="md"; this.classList.add("on"); document.getElementById("tabJson").classList.remove("on"); refreshExport(); };
+document.getElementById("btnExport").onclick=()=>{ exMode="json"; document.getElementById("tabJson").classList.add("on"); document.getElementById("tabMd").classList.remove("on"); refreshExport(); ovExport.classList.add("open"); };
+document.getElementById("btnCopy").onclick=()=>{ const ta=document.getElementById("exArea"); const txt=ta.value; const done=()=>toast("복사됨");
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(()=>{ta.focus();ta.select();try{document.execCommand("copy");done();}catch(e){toast("복사 실패 — 직접 전체선택 후 복사");}}); }
+  else { ta.focus();ta.select(); try{document.execCommand("copy");done();}catch(e){toast("복사 실패 — 직접 선택해서 복사");} } };
+document.getElementById("btnDownload").onclick=()=>{ const isJson=exMode==="json"; const txt=document.getElementById("exArea").value;
+  const safe=(((flow.meta&&flow.meta.subject)||"flow")+"_"+((flow.meta&&flow.meta.topic)||"")).replace(/[\\/:*?"<>|\s]+/g,"_");
+  try{ const blob=new Blob([txt],{type:isJson?"application/json":"text/markdown"}); const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download=safe+(isJson?".json":".md"); document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500); toast("파일 저장 시도됨");
+  }catch(e){ toast("다운로드 차단됨 — [복사]로 받아줘"); } };
+
+/* ===== help ===== */
+const ovHelp=document.getElementById("ovHelp");
+document.getElementById("btnHelp").onclick=()=>{ document.getElementById("helpBody").innerHTML=
+  '<h3>이게 뭐야</h3>'+
+  '<p>사례형 포섭 판정을 <b>한 단계씩 질문에 답하며</b> 결론까지 가는 인터랙티브 의사결정 도구야. 개념도(구조 암기)와 짝을 이루는, 적용·포섭 훈련용.</p>'+
+  '<h3>두 가지 모드</h3>'+
+  '<ul><li><b>▶ 풀어보기</b> — 질문에 답하면 분기를 따라가 결론(✓해당/✕부정/◐조건부)에 도착. 거쳐온 경로는 위에 표시되고, <code>← 한 단계 뒤로</code>·<code>↻ 처음부터</code>로 다시.</li>'+
+  '<li><b>▦ 전체 보기</b> — 모든 질문·선택지·결과를 한눈에 펼쳐서 구조를 검토.</li></ul>'+
+  '<h3>노드 문법 (JSON)</h3>'+
+  '<ul><li><b>question</b> — <code>q</code>(질문), <code>hint</code>(선택), <code>options[]</code>: 각 선택지는 <code>label</code>(보일 문구)·<code>crumb</code>(경로 라벨)·<code>to</code>(다음 노드 id)</li>'+
+  '<li><b>result</b> — <code>verdict</code>(<code>yes</code>/<code>no</code>/<code>maybe</code>)·<code>title</code>·<code>sub</code>(선택)·<code>why</code>(이유)·<code>refs</code>(판례·근거)·<code>verified</code>(판례 검증상태, 선택)</li>'+
+  '<li>최상위는 <code>meta.start</code>가 시작 노드를 가리켜.</li></ul>'+
+  '<h3>내용 만들기</h3>'+
+  '<p>단원 학습 후 Claude에게 "이 쟁점 판단 흐름도 JSON 만들어줘"라고 하면 이 포맷으로 나와. <b>[가져오기]</b>에 붙여넣으면 끝. 판례번호는 검증된 것만 쓰고, 불확실하면 <code>verified:false</code>로 표시해.</p>'+
+  '<h3>저장</h3>'+
+  '<p>브라우저에 <b>자동저장</b>돼서 다시 열면 마지막 흐름도가 그대로 있어. 단 <b>작업공간은 하나</b>라, 쟁점별로 보관하려면 각각 <b>[내보내기 → JSON]</b>으로 받아둬.</p>';
+  ovHelp.classList.add("open"); };
+
+/* ===== overlay close + toast ===== */
+function closeOverlays(){ document.querySelectorAll(".overlay").forEach(o=>o.classList.remove("open")); }
+document.querySelectorAll(".overlay").forEach(o=>{ o.addEventListener("click",e=>{ if(e.target===o||e.target.closest("[data-close]")) closeOverlays(); }); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeOverlays(); });
+let toastT=null;
+function toast(m){ const el=document.getElementById("toast"); el.textContent=m; el.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("show"),2200); }
+
+/* ===== init ===== */
+render();
+</script>
+</body>
+</html>
