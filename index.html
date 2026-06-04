@@ -93,10 +93,17 @@
   .savehint{font-size:11px;color:var(--t-definition);font-weight:700;margin-left:auto;display:inline-flex;gap:5px;align-items:center}
 
   /* ---------- canvas ---------- */
-  #canvas{position:relative;z-index:1;width:100%;height:calc(100vh - 118px);overflow:auto;padding:34px 40px 120px}
-  #stage{position:relative;display:inline-block;min-width:100%}
+  #canvas{position:relative;z-index:1;width:100%;height:calc(100vh - 118px);overflow:auto;padding:34px 40px 120px;-webkit-overflow-scrolling:touch}
+  #zoomWrap{position:relative;overflow:hidden}
+  #stage{position:relative;display:inline-block;transform-origin:0 0;will-change:transform}
   svg#links{position:absolute;top:0;left:0;overflow:visible;pointer-events:none;z-index:1}
   #tree{position:relative;z-index:2}
+  #zoomctl{position:fixed;right:16px;bottom:16px;z-index:40;display:flex;gap:6px;align-items:center;
+    background:rgba(247,243,234,.92);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:13px;padding:6px;box-shadow:var(--shadow-lg)}
+  #zoomctl button{min-width:42px;height:42px;border-radius:10px;border:1px solid var(--line);background:var(--card);
+    cursor:pointer;font-family:var(--font-mono);font-weight:800;font-size:19px;color:var(--ink);display:grid;place-items:center;transition:.12s;padding:0}
+  #zoomctl button:hover{border-color:var(--seal);color:var(--seal)}
+  #zoomctl #zLabel{font-size:12px;padding:0 10px}
 
   /* recursive tree (left -> right) */
   .subtree{display:flex;align-items:center}
@@ -256,10 +263,18 @@
 </header>
 
 <div id="canvas">
-  <div id="stage">
-    <svg id="links"></svg>
-    <div id="tree"></div>
+  <div id="zoomWrap">
+    <div id="stage">
+      <svg id="links"></svg>
+      <div id="tree"></div>
+    </div>
   </div>
+</div>
+<div id="zoomctl">
+  <button id="zOut" title="축소" aria-label="축소">−</button>
+  <button id="zLabel" title="100%로 되돌리기">100%</button>
+  <button id="zIn" title="확대" aria-label="확대">＋</button>
+  <button id="zFit" title="전체 맞춤" aria-label="전체 맞춤">⤢</button>
 </div>
 
 <!-- detail / edit modal -->
@@ -628,11 +643,23 @@ function render(){
 }
 
 /* ---------------- connectors ---------------- */
+const stageEl=document.getElementById("stage");
+const zoomWrapEl=document.getElementById("zoomWrap");
+const canvasEl=document.getElementById("canvas");
+let zoom=1;
+
+/* logical offset of an element relative to #stage — unaffected by CSS transform,
+   so connectors stay correct at any zoom level */
+function offsetIn(el){ let x=0,y=0,n=el; while(n&&n!==stageEl){ x+=n.offsetLeft; y+=n.offsetTop; n=n.offsetParent; } return {x,y}; }
+/* size the wrapper to the *scaled* footprint so the canvas scrolls correctly */
+function syncWrap(){ zoomWrapEl.style.width=(stageEl.offsetWidth*zoom)+"px"; zoomWrapEl.style.height=(stageEl.offsetHeight*zoom)+"px"; }
+function applyZoom(){ stageEl.style.transform="scale("+zoom+")"; syncWrap(); const l=document.getElementById("zLabel"); if(l) l.textContent=Math.round(zoom*100)+"%"; }
+function setZoom(z){ zoom=Math.max(0.25,Math.min(2,z)); applyZoom(); drawLinks(); }
+function fitZoom(){ const w=stageEl.offsetWidth||1,h=stageEl.offsetHeight||1; const z=Math.min((canvasEl.clientWidth-56)/w,(canvasEl.clientHeight-56)/h,1); setZoom(z); canvasEl.scrollTo(0,0); }
+
 function drawLinks(){
-  const stage=document.getElementById("stage");
   const svg=document.getElementById("links");
-  const sr=stage.getBoundingClientRect();
-  const w=stage.offsetWidth, h=stage.offsetHeight;
+  const w=stageEl.offsetWidth, h=stageEl.offsetHeight;
   svg.setAttribute("width",w); svg.setAttribute("height",h);
   svg.setAttribute("viewBox","0 0 "+w+" "+h);
   let paths="";
@@ -640,14 +667,14 @@ function drawLinks(){
     const pid=ch.dataset.parent;
     const pcard=document.querySelector('.node-card[data-id="'+pid+'"]');
     if(!pcard) return;
-    const pr=pcard.getBoundingClientRect();
-    const px=pr.right - sr.left, py=pr.top - sr.top + pr.height/2;
+    const po=offsetIn(pcard);
+    const px=po.x+pcard.offsetWidth, py=po.y+pcard.offsetHeight/2;
     // direct children = .subtree > .node-card
     Array.from(ch.children).forEach(sub=>{
       const ccard=sub.querySelector(":scope > .node-card");
       if(!ccard) return;
-      const cr=ccard.getBoundingClientRect();
-      const cx=cr.left - sr.left, cy=cr.top - sr.top + cr.height/2;
+      const co=offsetIn(ccard);
+      const cx=co.x, cy=co.y+ccard.offsetHeight/2;
       const midX=px+(cx-px)/2;
       const acc=((TYPES[ccard.dataset.ntype]||{}).raw)||"#998";
       paths+='<path d="M '+px+' '+py+' L '+midX+' '+py+' L '+midX+' '+cy+' L '+cx+' '+cy+'" fill="none" stroke="'+acc.trim()+'" stroke-opacity="0.4" stroke-width="1.6"/>';
@@ -655,8 +682,21 @@ function drawLinks(){
     });
   });
   svg.innerHTML=paths;
+  syncWrap();
 }
 window.addEventListener("resize",()=>requestAnimationFrame(drawLinks));
+
+/* zoom buttons */
+document.getElementById("zIn").onclick=()=>setZoom(zoom*1.2);
+document.getElementById("zOut").onclick=()=>setZoom(zoom/1.2);
+document.getElementById("zFit").onclick=fitZoom;
+document.getElementById("zLabel").onclick=()=>{ setZoom(1); canvasEl.scrollTo(0,0); };
+/* pinch-to-zoom (mobile) */
+let _pd=0,_pz=1,_pinch=false;
+function _td(t){return Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);}
+canvasEl.addEventListener("touchstart",e=>{ if(e.touches.length===2){_pinch=true;_pd=_td(e.touches);_pz=zoom;} },{passive:true});
+canvasEl.addEventListener("touchmove",e=>{ if(_pinch&&e.touches.length===2){ e.preventDefault(); const d=_td(e.touches); if(_pd>0) setZoom(_pz*d/_pd); } },{passive:false});
+canvasEl.addEventListener("touchend",e=>{ if(e.touches.length<2)_pinch=false; },{passive:true});
 
 /* ---------------- detail / edit modal ---------------- */
 const ovDetail=document.getElementById("ovDetail");
@@ -953,6 +993,7 @@ function toast(msg){const el=document.getElementById("toast");el.textContent=msg
 /* ---------------- init ---------------- */
 renderLegend();
 render();
+applyZoom();
 </script>
 </body>
 </html>
