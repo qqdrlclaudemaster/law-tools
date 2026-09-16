@@ -171,6 +171,7 @@
   .opts button.ok{background:color-mix(in srgb,var(--green) 18%,var(--card));border-color:var(--green)}
   .opts button.ng{background:color-mix(in srgb,var(--seal) 18%,var(--card));border-color:var(--seal)}
   .opts button:disabled{cursor:default}
+  .opts button.glyph{font-size:30px;padding:8px 14px}
 
   .statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
   .stat{background:var(--paper-2);border-radius:12px;padding:10px;text-align:center}
@@ -421,6 +422,7 @@ function hunMain(e){ if(!e.hun.length) return e.kokuji?'국자(国字)':'—'; c
 function onList(e){ return e.on.map(r=>r.r); }
 function kunList(e){ return e.kun.map(r=>r.r); }
 function dispK(e){ return e.alt ? e.alt : e.k; }
+function krDiff(e){ return e.kr!==e.k && e.kr!==e.alt; }
 function srsOf(k){ return S.srs[k]; }
 function stateOf(k){ const s=S.srs[k]; if(!s) return 'new'; if(s.iv>=21) return 'mature'; return 'learning'; }
 function isDue(k){ const s=S.srs[k]; return !!s && s.due<=Date.now(); }
@@ -493,7 +495,7 @@ function rowHTML(e){
   const rd = `<b class="ja">${esc(onList(e).join('·'))}</b>${e.on.length&&e.kun.length?' <span class="muted">/</span> ':''}<i class="ja">${esc(kunList(e).join('·'))}</i>`;
   return `<button class="krow" data-k="${esc(e.k)}">
     <span class="big glyph" lang="ja">${esc(dispK(e))}</span>
-    <span class="mid"><div class="hun">${esc(hunMain(e))}${e.hun.length>1?` <span class="muted" style="font-weight:500;font-size:12px">외 ${e.hun.length-1}</span>`:''}${e.kr!==e.k?` <span class="tag kr ko" lang="ko">${esc(e.kr)}</span>`:''}</div><div class="rd">${rd}</div></span>
+    <span class="mid"><div class="hun">${esc(hunMain(e))}${e.hun.length>1?` <span class="muted" style="font-weight:500;font-size:12px">외 ${e.hun.length-1}</span>`:''}${krDiff(e)?` <span class="tag kr ko" lang="ko">${esc(e.kr)}</span>`:''}</div><div class="rd">${rd}</div></span>
     <span class="st">${S.bm[e.k]?'<span class="bm">★</span>':''}<span class="dot ${due?'due':st}"></span><span>${GRADE_LABEL[e.g]}${e.jl?' · N'+e.jl:''}</span></span>
   </button>`;
 }
@@ -533,7 +535,7 @@ function detailHTML(e){
       ${e.en?`<div class="muted" style="font-size:12.5px;margin-top:6px">${esc(e.en)}</div>`:''}
     </div>
   </div>
-  ${e.kr!==e.k ? `<div class="krbox"><div class="g glyph ko" lang="ko">${esc(e.kr)}</div><div class="t"><b>한국에서 쓰는 자형</b> (일본 신자체 <span class="ja">${esc(dispK(e))}</span> ↔ 한국 정자 <span class="ko" lang="ko">${esc(e.kr)}</span>)${e.old&&e.old.length&&(e.old.length>1||e.old[0]!==e.kr)?`<br>상용한자표 구자체: <span class="ja">${esc(e.old.join(' · '))}</span>`:''}</div></div>`
+  ${krDiff(e) ? `<div class="krbox"><div class="g glyph ko" lang="ko">${esc(e.kr)}</div><div class="t"><b>한국에서 쓰는 자형</b> (일본 신자체 <span class="ja">${esc(dispK(e))}</span> ↔ 한국 정자 <span class="ko" lang="ko">${esc(e.kr)}</span>)${e.old&&e.old.length&&(e.old.length>1||e.old[0]!==e.kr)?`<br>상용한자표 구자체: <span class="ja">${esc(e.old.join(' · '))}</span>`:''}</div></div>`
     : (e.alt?`<div class="krbox"><div class="g glyph ja" lang="ja">${esc(e.k)}</div><div class="t">상용한자표의 정식 자형은 <span class="ja">${esc(e.k)}</span>이고, 일반적으로 <span class="ja">${esc(e.alt)}</span>로 표기해.</div></div>`:'')}
   <div class="muted" style="font-size:12px;margin-top:8px">${srsTxt}</div>
   ${e.on.map(r=>readingGroupHTML(r,'on')).join('')}
@@ -622,7 +624,7 @@ function nextCard(){
 function backHTML(e){
   const exs = e.on.concat(e.kun).flatMap(r=>r.ex.slice(0,2)).slice(0,6).map(x=>`<span class="ja" lang="ja">${esc(x[0])}<small class="muted"> ${esc(x[1])}</small></span>`).join('');
   return `<div class="back">
-    <div class="top"><span class="k glyph" lang="ja">${esc(dispK(e))}</span><div><div class="hl">${esc(hunText(e))}</div>${e.kr!==e.k?`<div class="soft" style="font-size:13px">한국 자형 <span class="ko" lang="ko" style="font-size:18px">${esc(e.kr)}</span></div>`:''}</div></div>
+    <div class="top"><span class="k glyph" lang="ja">${esc(dispK(e))}</span><div><div class="hl">${esc(hunText(e))}</div>${krDiff(e)?`<div class="soft" style="font-size:13px">한국 자형 <span class="ko" lang="ko" style="font-size:18px">${esc(e.kr)}</span></div>`:''}</div></div>
     <div class="rds">${e.on.length?`<b>음</b> <span class="ja">${esc(onList(e).join('・'))}</span> `:''}${e.kun.length?`&nbsp;<i>훈</i> <span class="ja">${esc(kunList(e).join('・'))}</span>`:''}</div>
     <div class="exs">${exs}</div>
   </div>`;
@@ -632,7 +634,7 @@ function renderFlash(){
   if(!flipped){
     let inner;
     if(S.set.front==='kanji') inner=`<div class="kbig glyph" lang="ja">${esc(dispK(e))}</div>`;
-    else if(S.set.front==='meaning') inner=`<div class="front-text">${esc(hunText(e))}</div>${e.kr!==e.k?'':''}<div class="front-sub">이 뜻의 한자와 일본어 읽기는?</div>`;
+    else if(S.set.front==='meaning') inner=`<div class="front-text">${esc(hunText(e))}</div><div class="front-sub">이 뜻의 한자와 일본어 읽기는?</div>`;
     else inner=`<div class="front-text ja" lang="ja">${esc(onList(e).join('・'))}${e.on.length&&e.kun.length?'<br>':''}<span style="color:var(--kun)">${esc(kunList(e).join('・'))}</span></div><div class="front-sub">이 읽기의 한자와 뜻은?</div>`;
     f.innerHTML=inner+`<div class="hint">${cur.type==='new'?'새 카드':'복습'} · 탭해서 뒤집기</div>`;
     $('#grades').classList.add('hidden');
