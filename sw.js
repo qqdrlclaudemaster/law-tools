@@ -1,6 +1,6 @@
 /* 常用漢字 학습장 service worker: 앱 파일을 캐시해 오프라인에서도 열리게 한다.
    VERSION 값이 바뀌면 캐시가 새로 만들어지고 이전 캐시는 지워진다. */
-const VERSION = 'a49db3b3da';
+const VERSION = 'bbceb96c85';
 const CACHE = 'joyo-kanji-' + VERSION;
 const BASE = new URL('./', self.location).href;
 const FILES = ['kanji.html', 'kanji-strokes.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-180.png'];
