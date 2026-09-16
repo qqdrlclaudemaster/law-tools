@@ -1,0 +1,16 @@
+{
+  "name": "常用漢字 학습장",
+  "short_name": "常用漢字",
+  "description": "일본 상용한자 2,136자 학습 앱 (한국 훈음·자형, 음독·훈독, 용례, 획순, 간격 반복)",
+  "lang": "ko",
+  "start_url": "./kanji.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f3ea",
+  "theme_color": "#f7f3ea",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
